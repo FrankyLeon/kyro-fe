@@ -1,14 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import {
-  CreditCard,
-  Bitcoin,
-  Wallet,
-  ArrowLeft,
-  CheckCircle2,
-  AlertCircle,
-} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AlertCircle, CheckCircle2, Info } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { createDeposit } from "@/lib/api/deposit";
 import {
@@ -17,31 +10,31 @@ import {
 } from "@/lib/deposit-packs";
 import { getWalletMinAmountCents } from "@/lib/wallet-config";
 import { SITE_CTA } from "@/lib/site-copy";
+import { DEPOSIT_PAYMENT_OPTIONS } from "@/lib/payment-methods";
+import { useDepositDestinations } from "@/hooks/use-deposit-destinations";
 import type {
   DepositMethod,
   CardPaymentDetails,
   PayPalPaymentDetails,
   CryptoPaymentDetails,
+  CryptoCurrency,
   DepositRecord,
 } from "@/types/deposit";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { cn, formatBalance, formatPrice } from "@/lib/utils";
+import { formatWalletAmount, formatWalletNumber } from "@/lib/utils";
 import { PaymentCardForm } from "./payment-card-form";
 import { PaymentPayPalForm } from "./payment-paypal-form";
-import { PaymentCryptoForm } from "./payment-crypto-form";
-
-type Step = "amount" | "payment" | "success";
-
-const methods: {
-  id: DepositMethod;
-  label: string;
-  icon: React.ReactNode;
-}[] = [
-  { id: "card", label: "Credit / Debit", icon: <CreditCard className="h-5 w-5" /> },
-  { id: "paypal", label: "PayPal", icon: <Wallet className="h-5 w-5" /> },
-  { id: "crypto", label: "Crypto", icon: <Bitcoin className="h-5 w-5" /> },
-];
+import {
+  MethodGlyph,
+  QrCodeImage,
+  WalletActionButton,
+  WalletAmountInput,
+  WalletBalanceField,
+  WalletCopyField,
+  WalletMetaRow,
+  WalletSelect,
+} from "@/components/wallet/wallet-ui";
+import { CurrencyIcon } from "@/components/wallet/currency-icon";
 
 const emptyCard: CardPaymentDetails = {
   cardholderName: "",
@@ -54,17 +47,75 @@ interface DepositFlowProps {
   onSuccess?: (transaction: DepositRecord) => void;
 }
 
+function InstructionBlock({ lines }: { lines: string[] }) {
+  if (lines.length === 0) return null;
+
+  return (
+    <div className="rounded-xl border border-white/8 bg-[#1c1e28] px-4 py-4 text-center text-[13px] leading-relaxed text-zinc-300">
+      {lines.map((line) => (
+        <p key={line}>{line}</p>
+      ))}
+    </div>
+  );
+}
+
+function MissingDestination({ message }: { message: string }) {
+  return (
+    <p className="rounded-xl border border-white/8 bg-[#1c1e28] px-4 py-3 text-center text-sm text-zinc-400">
+      {message}
+    </p>
+  );
+}
+
 export function DepositFlow({ onSuccess }: DepositFlowProps) {
   const { user, refreshBalance } = useAuth();
-  const [step, setStep] = useState<Step>("amount");
+  const { destinations, loading } = useDepositDestinations();
   const [customAmount, setCustomAmount] = useState("");
-  const [method, setMethod] = useState<DepositMethod>("card");
+  const [method, setMethod] = useState<DepositMethod>("bank");
   const [card, setCard] = useState<CardPaymentDetails>(emptyCard);
   const [paypal, setPaypal] = useState<PayPalPaymentDetails>({ email: "" });
-  const [crypto, setCrypto] = useState<CryptoPaymentDetails>({ currency: "USDC" });
+  const [crypto, setCrypto] = useState<CryptoPaymentDetails>({
+    currency: "USDT",
+  });
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
   const [lastTx, setLastTx] = useState<DepositRecord | null>(null);
+
+  const paymentOptions = useMemo(() => {
+    const enabledIds = new Set(
+      destinations.methods.filter((item) => item.enabled).map((item) => item.id)
+    );
+    const filtered = DEPOSIT_PAYMENT_OPTIONS.filter((option) =>
+      enabledIds.has(option.id)
+    ).map((option) => ({
+      ...option,
+      label:
+        destinations.methods.find((item) => item.id === option.id)?.label ||
+        option.label,
+    }));
+
+    return filtered.length > 0 ? filtered : DEPOSIT_PAYMENT_OPTIONS;
+  }, [destinations.methods]);
+
+  const cryptoNetworks = useMemo(() => {
+    const withAddress = destinations.crypto.networks.filter(
+      (network) => network.address
+    );
+    return withAddress.length > 0 ? withAddress : destinations.crypto.networks;
+  }, [destinations.crypto.networks]);
+
+  useEffect(() => {
+    if (!paymentOptions.some((option) => option.id === method)) {
+      setMethod(paymentOptions[0]?.id ?? "bank");
+    }
+  }, [method, paymentOptions]);
+
+  useEffect(() => {
+    if (!cryptoNetworks.some((network) => network.id === crypto.currency)) {
+      const next = cryptoNetworks[0]?.id;
+      if (next) setCrypto({ currency: next });
+    }
+  }, [crypto.currency, cryptoNetworks]);
 
   if (!user) return null;
 
@@ -72,25 +123,31 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
   const minAmountCents = getWalletMinAmountCents();
   const amountCents = parseCustomDepositCents(customAmount);
   const amountValid = amountCents >= minAmountCents;
+  const selectedMethod =
+    paymentOptions.find((item) => item.id === method) ?? paymentOptions[0];
+  const selectedNetwork =
+    cryptoNetworks.find((network) => network.id === crypto.currency) ??
+    cryptoNetworks[0];
+  const cryptoAddress = selectedNetwork?.address ?? "";
+  const bankAccount = [destinations.bank.accountNumber, destinations.bank.accountHolder]
+    .filter(Boolean)
+    .join(" - ");
 
-  function goToPayment() {
+  async function handleConfirm() {
+    if (!user) return;
     setError("");
+
     if (amountCents <= 0) {
       setError("Enter a valid deposit amount.");
       return;
     }
     if (amountCents < minAmountCents) {
       setError(
-        `Minimum deposit is ${formatBalance(minAmountCents, currency)}.`
+        `Minimum deposit is ${formatWalletAmount(minAmountCents, currency)}.`
       );
       return;
     }
-    setStep("payment");
-  }
 
-  async function handleConfirm() {
-    if (!user) return;
-    setError("");
     setProcessing(true);
     try {
       const result = await createDeposit(user, {
@@ -104,7 +161,6 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
       });
       await refreshBalance();
       setLastTx(result.transaction);
-      setStep("success");
       onSuccess?.(result.transaction);
       setCard(emptyCard);
     } catch (e) {
@@ -115,29 +171,29 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
   }
 
   function resetFlow() {
-    setStep("amount");
     setError("");
     setLastTx(null);
+    setCustomAmount("");
   }
 
-  if (step === "success" && lastTx) {
+  if (lastTx) {
     return (
-      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-8 text-center">
-        <CheckCircle2 className="h-14 w-14 text-emerald-400 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-white">Deposit complete</h2>
-        <p className="text-zinc-400 mt-2">
-          <span className="text-amber-400 font-semibold">
-            +{formatBalance(lastTx.amountCents, lastTx.currency)}
+      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-8 text-center">
+        <CheckCircle2 className="mx-auto mb-4 h-14 w-14 text-emerald-400" />
+        <h2 className="text-xl font-bold text-white">Deposit complete</h2>
+        <p className="mt-2 text-zinc-400">
+          <span className="font-semibold text-white">
+            +{formatWalletAmount(lastTx.amountCents, lastTx.currency)}
           </span>{" "}
           added to your balance
         </p>
-        <p className="text-sm text-zinc-500 mt-4">
-          Reference: <span className="font-mono text-zinc-400">{lastTx.reference}</span>
-        </p>
-        <p className="text-sm text-zinc-500">
-          Paid: {formatPrice(lastTx.priceCents, lastTx.currency)} via {lastTx.method}
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
+        {lastTx.reference ? (
+          <p className="mt-4 text-sm text-zinc-500">
+            Reference:{" "}
+            <span className="font-mono text-zinc-400">{lastTx.reference}</span>
+          </p>
+        ) : null}
+        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Button onClick={resetFlow} variant="secondary">
             Make another deposit
           </Button>
@@ -149,113 +205,128 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
     );
   }
 
-  if (step === "payment") {
-    return (
-      <div className="space-y-6">
-        <button
-          type="button"
-          onClick={() => setStep("amount")}
-          className="flex items-center gap-2 text-sm text-zinc-500 hover:text-amber-400"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Change amount
-        </button>
+  return (
+    <div className="space-y-3">
+      <WalletBalanceField
+        amountLabel={formatWalletAmount(user.balanceCents, currency)}
+      />
 
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
-          <p className="text-sm text-zinc-500">Deposit amount</p>
-          <p className="text-2xl font-bold text-white mt-1">
-            {formatBalance(amountCents, currency)}
+      <WalletSelect
+        label="Payments Method"
+        value={method}
+        onChange={setMethod}
+        icon={<MethodGlyph kind={selectedMethod?.icon ?? "bank"} />}
+        options={paymentOptions.map((option) => ({
+          id: option.id,
+          label: option.label,
+          icon: <MethodGlyph kind={option.icon} />,
+        }))}
+      />
+
+      {loading ? (
+        <p className="px-1 text-xs text-zinc-500">Loading deposit details…</p>
+      ) : null}
+
+      {method === "bank" ? (
+        <>
+          <InstructionBlock lines={destinations.bank.instructions} />
+          {bankAccount ? (
+            <WalletCopyField label="Bank Account" value={bankAccount} />
+          ) : (
+            <MissingDestination message="Bank deposit details are not configured yet." />
+          )}
+        </>
+      ) : null}
+
+      {method === "crypto" ? (
+        <>
+          <p className="px-1 pt-1 text-sm font-medium text-white">
+            Choose currency and standard
           </p>
-        </div>
+          {cryptoNetworks.length > 0 ? (
+            <WalletSelect
+              label="Currency"
+              value={selectedNetwork?.id ?? crypto.currency}
+              onChange={(id: CryptoCurrency) => setCrypto({ currency: id })}
+              options={cryptoNetworks.map((network) => ({
+                id: network.id,
+                label: network.label,
+              }))}
+            />
+          ) : null}
+          {cryptoAddress ? (
+            <>
+              <div className="py-2">
+                <QrCodeImage value={cryptoAddress} />
+              </div>
+              <WalletCopyField label="Crypto Address" value={cryptoAddress} />
+            </>
+          ) : (
+            <MissingDestination message="Crypto deposit addresses are not configured yet." />
+          )}
+          <WalletMetaRow
+            label="Min. Amount"
+            value={formatWalletNumber(minAmountCents)}
+            icon={<CurrencyIcon size="sm" />}
+          />
+        </>
+      ) : null}
 
-        <div>
-          <p className="text-sm font-medium text-zinc-300 mb-3">Payment method</p>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {methods.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => setMethod(m.id)}
-                className={cn(
-                  "flex items-center justify-center gap-2 rounded-xl border p-3 text-sm font-medium transition-colors",
-                  method === m.id
-                    ? "border-amber-500/60 bg-amber-500/10 text-amber-400"
-                    : "border-zinc-800 text-zinc-400 hover:border-zinc-600"
-                )}
-              >
-                {m.icon}
-                {m.label}
-              </button>
-            ))}
+      {method === "card" ? (
+        <div className="space-y-3">
+          <InstructionBlock lines={destinations.card.instructions} />
+          <div className="rounded-xl border border-white/8 bg-[#1c1e28] p-4">
+            <PaymentCardForm value={card} onChange={setCard} />
           </div>
         </div>
+      ) : null}
 
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-5">
-          {method === "card" && (
-            <PaymentCardForm value={card} onChange={setCard} />
+      {method === "paypal" ? (
+        <div className="space-y-3">
+          <InstructionBlock lines={destinations.paypal.instructions} />
+          {destinations.paypal.email ? (
+            <WalletCopyField
+              label="PayPal account"
+              value={destinations.paypal.email}
+            />
+          ) : (
+            <MissingDestination message="PayPal receiving email is not configured yet." />
           )}
-          {method === "paypal" && (
+          <div className="rounded-xl border border-white/8 bg-[#1c1e28] p-4">
             <PaymentPayPalForm
               value={paypal}
               onChange={setPaypal}
               defaultEmail={user.email}
             />
-          )}
-          {method === "crypto" && (
-            <PaymentCryptoForm
-              value={crypto}
-              onChange={setCrypto}
-              priceCents={amountCents}
-            />
-          )}
-        </div>
-
-        {error ? (
-          <div className="flex items-center gap-2 text-sm text-red-400">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            {error}
           </div>
-        ) : null}
+        </div>
+      ) : null}
 
-        <Button
-          className="w-full"
-          size="lg"
-          onClick={handleConfirm}
-          isLoading={processing}
-        >
-          Confirm deposit · {formatBalance(amountCents, currency)}
-        </Button>
-      </div>
-    );
-  }
+      <WalletAmountInput
+        id="deposit-amount"
+        label="Deposit amount"
+        value={customAmount || "0"}
+        onChange={(value) => {
+          setCustomAmount(value === "0" ? "" : value);
+          setError("");
+        }}
+      />
 
-  return (
-    <div className="space-y-6">
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5 space-y-4">
-        <Input
-          id="custom-amount"
-          label={`Amount (${currency})`}
-          type="text"
-          inputMode="decimal"
-          placeholder="e.g. 25.00"
-          value={customAmount}
-          onChange={(e) => {
-            setCustomAmount(e.target.value);
-            setError("");
-          }}
+      {method !== "crypto" ? (
+        <WalletMetaRow
+          label="Min. Amount"
+          value={formatWalletNumber(minAmountCents)}
+          icon={<CurrencyIcon size="sm" />}
         />
-        {amountCents > 0 ? (
-          <p className="text-sm text-zinc-400">
-            Deposit total:{" "}
-            <span className="text-white font-semibold">
-              {formatBalance(amountCents, currency)}
-            </span>
-          </p>
-        ) : null}
-        <p className="text-xs text-zinc-600">
-          Minimum {formatBalance(minAmountCents, currency)}
+      ) : null}
+
+      {method === "bank" ? (
+        <p className="flex items-start gap-1.5 px-1 text-[11px] leading-relaxed text-zinc-500">
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          Confirm after you send the transfer so we can credit{" "}
+          {formatWalletAmount(amountCents || minAmountCents, currency)}.
         </p>
-      </div>
+      ) : null}
 
       {error ? (
         <div className="flex items-center gap-2 text-sm text-red-400">
@@ -264,9 +335,13 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
         </div>
       ) : null}
 
-      <Button className="w-full" size="lg" onClick={goToPayment} disabled={!amountValid}>
-        Continue to payment
-      </Button>
+      <WalletActionButton
+        onClick={() => void handleConfirm()}
+        isLoading={processing}
+        disabled={!amountValid}
+      >
+        Confirm deposit
+      </WalletActionButton>
     </div>
   );
 }

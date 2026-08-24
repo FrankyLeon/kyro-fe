@@ -24,6 +24,23 @@ export function formatBalance(cents: number, currency = "USD"): string {
   }
 }
 
+/** Compact amount + currency code, e.g. `1,731.9 USD`. */
+export function formatWalletAmount(cents: number, currency = "USD"): string {
+  const value = cents / 100;
+  const formatted = new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(value);
+  return `${formatted} ${currency.toUpperCase()}`;
+}
+
+export function formatWalletNumber(cents: number): string {
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(cents / 100);
+}
+
 export function formatDateTime(iso: string): string {
   return new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",

@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import type { CryptoCurrency, CryptoPaymentDetails } from "@/types/deposit";
 
 const currencies: { id: CryptoCurrency; label: string; network: string }[] = [
+  { id: "USDT", label: "Tether", network: "BEP-20" },
   { id: "BTC", label: "Bitcoin", network: "Bitcoin" },
   { id: "ETH", label: "Ethereum", network: "ERC-20" },
   { id: "USDC", label: "USD Coin", network: "ERC-20" },
@@ -18,6 +19,7 @@ interface PaymentCryptoFormProps {
 }
 
 const CRYPTO_PLACEHOLDER_ADDRESSES: Record<CryptoCurrency, string> = {
+  USDT: "0xd91815101ac60b5577becedbce460cf8a1459b37",
   BTC: "bc1qkyro9x7k2m4demo8deposit0000",
   ETH: "0xKyro7a3b9c2d4e5f6DemoDeposit00",
   USDC: "0xKyro7a3b9c2d4e5f6DemoDeposit00",

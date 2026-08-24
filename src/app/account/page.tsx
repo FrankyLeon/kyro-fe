@@ -5,6 +5,7 @@ import Link from "next/link";
 import { User, Wallet, Dices, HelpCircle } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { useLogout } from "@/hooks/use-logout";
+import { useWalletMenu } from "@/context/wallet-menu-context";
 import { GuestAuthPrompt } from "@/components/auth/guest-auth-prompt";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
@@ -15,6 +16,7 @@ import { formatBalance } from "@/lib/utils";
 export default function AccountPage() {
   const { user, isLoading, refreshBalance } = useAuth();
   const logout = useLogout();
+  const { openWallet } = useWalletMenu();
 
   useEffect(() => {
     if (user) {
@@ -70,8 +72,9 @@ export default function AccountPage() {
         </div>
 
         <div className="mt-6 grid gap-3">
-          <Link
-            href="/wallet"
+          <button
+            type="button"
+            onClick={() => openWallet("deposit")}
             className="flex items-center justify-between rounded-lg border border-zinc-800 px-4 py-3 hover:border-zinc-600 transition-colors"
           >
             <span className="flex items-center gap-2 text-zinc-300">
@@ -81,7 +84,7 @@ export default function AccountPage() {
             <span className="font-semibold text-amber-400">
               {formatBalance(user.balanceCents, user.currency)}
             </span>
-          </Link>
+          </button>
           <Link
             href="/store"
             className="flex items-center justify-between rounded-lg border border-zinc-800 px-4 py-3 hover:border-zinc-600 transition-colors"

@@ -16,14 +16,15 @@ import {
 import { useState } from "react";
 import { useAuth } from "@/context/auth-context";
 import { useLogout } from "@/hooks/use-logout";
+import { useWalletMenu } from "@/context/wallet-menu-context";
 import { UserAvatar } from "@/components/user-avatar";
-import { cn, formatBalance } from "@/lib/utils";
+import { CurrencyIcon } from "@/components/wallet/currency-icon";
+import { cn, formatWalletNumber } from "@/lib/utils";
 import { SITE_BRAND } from "@/lib/site-copy";
 import { Button } from "@/components/ui/button";
 
 const nav = [
   { href: "/store", label: "Games" },
-  { href: "/wallet", label: "Wallet" },
   { href: "/support", label: "Support" },
 ];
 
@@ -31,6 +32,7 @@ export function Header() {
   const pathname = usePathname();
   const { user, isLoading } = useAuth();
   const logout = useLogout();
+  const { openWallet } = useWalletMenu();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -64,16 +66,27 @@ export function Header() {
 
         <div className="flex items-center gap-2 sm:gap-3">
           {!isLoading && user ? (
-            <Link
-              href="/wallet"
-              title="Wallet balance"
-              className="balance-chip hidden sm:flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm transition-all hover:shadow-amber-500/30"
-            >
-              <Wallet className="h-4 w-4 text-amber-400" />
-              <span className="font-semibold text-amber-300">
-                {formatBalance(user.balanceCents, user.currency)}
-              </span>
-            </Link>
+            <div className="hidden items-center gap-2 sm:flex">
+              <button
+                type="button"
+                onClick={() => openWallet("deposit")}
+                title="Wallet balance"
+                className="flex items-center gap-2 rounded-lg bg-[#1c1e28] px-3 py-1.5 ring-1 ring-white/10 transition-colors hover:ring-white/20"
+              >
+                <CurrencyIcon size="sm" />
+                <span className="text-sm font-semibold text-white">
+                  {formatWalletNumber(user.balanceCents)}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => openWallet("deposit")}
+                className="inline-flex h-9 items-center gap-2 rounded-lg bg-gradient-to-r from-[#6b4eea] to-[#4e8bea] px-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition-opacity hover:opacity-95"
+              >
+                <Wallet className="h-4 w-4" />
+                Wallet
+              </button>
+            </div>
           ) : null}
 
           {!isLoading && user ? (
@@ -148,6 +161,17 @@ export function Header() {
           ))}
           {user ? (
             <>
+              <button
+                type="button"
+                onClick={() => {
+                  openWallet("deposit");
+                  setMobileOpen(false);
+                }}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-300 hover:bg-zinc-800"
+              >
+                <Wallet className="h-4 w-4" />
+                Wallet
+              </button>
               <Link
                 href="/account"
                 onClick={() => setMobileOpen(false)}

@@ -21,6 +21,8 @@ export async function createWithdraw(
       playerExternalId: input.userId,
       currency,
       amount: input.amount,
+      destination: input.destination,
+      method: input.destination?.method,
     }),
   });
 

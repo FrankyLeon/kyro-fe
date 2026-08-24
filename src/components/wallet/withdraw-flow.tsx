@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { AlertCircle, ArrowDownToLine, CheckCircle2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { AlertCircle, CheckCircle2, Info } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { createWithdraw } from "@/lib/api/wallet";
 import { DEFAULT_CURRENCY } from "@/lib/deposit-packs";
@@ -10,12 +10,24 @@ import {
   parseWithdrawCents,
 } from "@/lib/withdraw-limits";
 import { getWalletMinAmountCents } from "@/lib/wallet-config";
-import type { WalletTransferResult } from "@/types/wallet";
+import {
+  WITHDRAW_BANKS,
+  WITHDRAW_CURRENCIES,
+  WITHDRAW_PAYMENT_OPTIONS,
+} from "@/lib/payment-methods";
+import type { WithdrawMethod, WalletTransferResult } from "@/types/wallet";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { formatBalance } from "@/lib/utils";
-
-type Step = "amount" | "confirm" | "success";
+import { formatWalletAmount, formatWalletNumber } from "@/lib/utils";
+import { CurrencyIcon } from "@/components/wallet/currency-icon";
+import {
+  MethodGlyph,
+  WalletActionButton,
+  WalletAmountInput,
+  WalletBalanceField,
+  WalletInlineInput,
+  WalletMetaRow,
+  WalletSelect,
+} from "@/components/wallet/wallet-ui";
 
 interface WithdrawFlowProps {
   onSuccess?: (result: WalletTransferResult) => void;
@@ -23,32 +35,68 @@ interface WithdrawFlowProps {
 
 export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
   const { user, refreshBalance } = useAuth();
-  const [step, setStep] = useState<Step>("amount");
-  const [amountInput, setAmountInput] = useState("");
+  const [amountInput, setAmountInput] = useState("0");
+  const [method, setMethod] = useState<WithdrawMethod>("bank");
+  const [payoutCurrency, setPayoutCurrency] =
+    useState<(typeof WITHDRAW_CURRENCIES)[number]>("USD");
+  const [accountName, setAccountName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [bankId, setBankId] = useState<(typeof WITHDRAW_BANKS)[number]["id"]>(
+    "khan"
+  );
+  const [cryptoAddress, setCryptoAddress] = useState("");
+  const [paypalEmail, setPaypalEmail] = useState("");
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
   const [lastResult, setLastResult] = useState<WalletTransferResult | null>(
     null
   );
 
+  const selectedMethod = WITHDRAW_PAYMENT_OPTIONS.find(
+    (item) => item.id === method
+  );
+  const selectedBank =
+    WITHDRAW_BANKS.find((bank) => bank.id === bankId) ?? WITHDRAW_BANKS[0];
+
+  const nameDefault = user?.displayName || user?.username || "";
+
+  const resolvedAccountName = accountName || nameDefault;
+  const resolvedPaypal = paypalEmail || user?.email || "";
+
+  const currency = user?.currency || DEFAULT_CURRENCY;
+  const minAmountCents = getWalletMinAmountCents();
+  const amountCents = parseWithdrawCents(
+    amountInput === "0" ? "" : amountInput
+  );
+  const amount = parseWithdrawAmount(amountInput === "0" ? "" : amountInput);
+  const exceedsBalance = Boolean(user && amountCents > user.balanceCents);
+  const amountValid =
+    Boolean(user) && amountCents >= minAmountCents && !exceedsBalance;
+
+  const convertedLabel = useMemo(() => {
+    if (amountCents <= 0) return "0";
+    return formatWalletNumber(amountCents);
+  }, [amountCents]);
+
   if (!user) return null;
 
-  const currency = user.currency || DEFAULT_CURRENCY;
-  const minAmountCents = getWalletMinAmountCents();
-  const amountCents = parseWithdrawCents(amountInput);
-  const amount = parseWithdrawAmount(amountInput);
-  const exceedsBalance = amountCents > user.balanceCents;
-  const amountValid = amountCents >= minAmountCents && !exceedsBalance;
-
-  function goToConfirm() {
+  function setMax() {
+    if (!user) return;
+    setAmountInput(formatWalletNumber(user.balanceCents));
     setError("");
+  }
+
+  async function handleConfirm() {
+    if (!user) return;
+    setError("");
+
     if (amountCents <= 0) {
       setError("Enter a valid withdrawal amount.");
       return;
     }
     if (amountCents < minAmountCents) {
       setError(
-        `Minimum withdrawal is ${formatBalance(minAmountCents, currency)}.`
+        `Minimum withdrawal is ${formatWalletAmount(minAmountCents, currency)}.`
       );
       return;
     }
@@ -56,18 +104,35 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
       setError("Amount exceeds your available balance.");
       return;
     }
-    setStep("confirm");
-  }
+    if (method === "bank" && (!resolvedAccountName || !accountNumber)) {
+      setError("Enter your account name and number.");
+      return;
+    }
+    if (method === "crypto" && !cryptoAddress.trim()) {
+      setError("Enter your crypto payout address.");
+      return;
+    }
+    if (method === "paypal" && !resolvedPaypal.trim()) {
+      setError("Enter your PayPal email.");
+      return;
+    }
 
-  async function handleConfirm() {
-    if (!user || !amountValid) return;
-    setError("");
     setProcessing(true);
     try {
-      const result = await createWithdraw(user, { amount, currency });
+      const result = await createWithdraw(user, {
+        amount,
+        currency: payoutCurrency || currency,
+        destination: {
+          method,
+          accountName: method === "bank" ? resolvedAccountName : undefined,
+          accountNumber: method === "bank" ? accountNumber : undefined,
+          bankName: method === "bank" ? selectedBank.label : undefined,
+          cryptoAddress: method === "crypto" ? cryptoAddress.trim() : undefined,
+          paypalEmail: method === "paypal" ? resolvedPaypal.trim() : undefined,
+        },
+      });
       await refreshBalance();
       setLastResult(result);
-      setStep("success");
       onSuccess?.(result);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Withdrawal failed.");
@@ -77,33 +142,36 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
   }
 
   function resetFlow() {
-    setStep("amount");
-    setAmountInput("");
+    setAmountInput("0");
     setError("");
     setLastResult(null);
   }
 
-  if (step === "success" && lastResult) {
+  if (lastResult) {
     return (
-      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-8 text-center">
-        <CheckCircle2 className="h-14 w-14 text-emerald-400 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-white">Withdrawal submitted</h2>
-        <p className="text-zinc-400 mt-2">
-          <span className="text-zinc-200 font-semibold">
-            −{formatBalance(Math.round(lastResult.transferAmount * 100), lastResult.currency)}
+      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-8 text-center">
+        <CheckCircle2 className="mx-auto mb-4 h-14 w-14 text-emerald-400" />
+        <h2 className="text-xl font-bold text-white">Withdrawal submitted</h2>
+        <p className="mt-2 text-zinc-400">
+          <span className="font-semibold text-zinc-200">
+            −
+            {formatWalletAmount(
+              Math.round(lastResult.transferAmount * 100),
+              lastResult.currency
+            )}
           </span>{" "}
           withdrawn from your balance
         </p>
-        <p className="text-sm text-zinc-500 mt-4">
+        <p className="mt-4 text-sm text-zinc-500">
           New balance:{" "}
-          <span className="text-amber-400 font-medium">
-            {formatBalance(
+          <span className="font-medium text-white">
+            {formatWalletAmount(
               Math.round(lastResult.balance * 100),
               lastResult.currency
             )}
           </span>
         </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
+        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Button onClick={resetFlow} variant="secondary">
             Make another withdrawal
           </Button>
@@ -115,101 +183,127 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
     );
   }
 
-  if (step === "confirm") {
-    return (
-      <div className="space-y-6">
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 space-y-4">
-          <div>
-            <p className="text-sm text-zinc-500">Withdrawal amount</p>
-            <p className="text-2xl font-bold text-white mt-1">
-              {formatBalance(amountCents, currency)}
-            </p>
-          </div>
-          <div className="border-t border-zinc-800 pt-4 flex justify-between text-sm">
-            <span className="text-zinc-500">Available balance</span>
-            <span className="text-zinc-300">
-              {formatBalance(user.balanceCents, currency)}
-            </span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-zinc-500">Balance after withdrawal</span>
-            <span className="text-amber-400 font-medium">
-              {formatBalance(user.balanceCents - amountCents, currency)}
-            </span>
-          </div>
-        </div>
-
-        <p className="text-xs text-zinc-500 leading-relaxed">
-          Withdrawals are processed securely. Processing time may vary depending
-          on your payment method.
-        </p>
-
-        {error ? (
-          <div className="flex items-center gap-2 text-sm text-red-400">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            {error}
-          </div>
-        ) : null}
-
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Button
-            variant="secondary"
-            className="flex-1"
-            onClick={() => setStep("amount")}
-            disabled={processing}
-          >
-            Back
-          </Button>
-          <Button
-            className="flex-1"
-            size="lg"
-            onClick={handleConfirm}
-            isLoading={processing}
-          >
-            Confirm withdrawal
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 px-4 py-3 flex items-center justify-between text-sm">
-        <span className="text-zinc-500">Available to withdraw</span>
-        <span className="font-semibold text-amber-400">
-          {formatBalance(user.balanceCents, currency)}
-        </span>
+    <div className="space-y-3">
+      <WalletBalanceField
+        amountLabel={formatWalletAmount(user.balanceCents, currency)}
+      />
+
+      <WalletSelect
+        label="Payments Method"
+        value={method}
+        onChange={setMethod}
+        icon={<MethodGlyph kind={selectedMethod?.icon ?? "bank"} />}
+        options={WITHDRAW_PAYMENT_OPTIONS.map((option) => ({
+          id: option.id,
+          label: option.label,
+          icon: <MethodGlyph kind={option.icon} />,
+        }))}
+      />
+
+      <WalletMetaRow
+        label={
+          <span className="inline-flex items-center gap-1.5">
+            Available to withdraw
+            <Info className="h-3.5 w-3.5 text-zinc-500" />
+          </span>
+        }
+        value={formatWalletNumber(user.balanceCents)}
+        icon={<CurrencyIcon size="sm" />}
+      />
+
+      <WalletAmountInput
+        id="withdraw-amount"
+        label="Withdrawal amount"
+        value={amountInput}
+        onChange={(value) => {
+          setAmountInput(value);
+          setError("");
+        }}
+        trailing={
+          <button
+            type="button"
+            onClick={setMax}
+            className="rounded-md bg-white/10 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-zinc-200 hover:bg-white/15"
+          >
+            max
+          </button>
+        }
+      />
+
+      <WalletMetaRow
+        label="Min. Amount"
+        value={formatWalletNumber(minAmountCents)}
+        icon={<CurrencyIcon size="sm" />}
+      />
+
+      <div className="grid grid-cols-[1fr_7.5rem] gap-2">
+        <WalletInlineInput
+          id="converted-amount"
+          label="Converted Amount"
+          value={convertedLabel}
+          readOnly
+        />
+        <WalletSelect
+          label="Currency"
+          value={payoutCurrency}
+          onChange={setPayoutCurrency}
+          options={WITHDRAW_CURRENCIES.map((code) => ({
+            id: code,
+            label: code,
+          }))}
+        />
       </div>
 
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5 space-y-4">
-        <Input
-          id="withdraw-amount"
-          label={`Amount (${currency})`}
-          type="text"
-          inputMode="decimal"
-          placeholder="e.g. 25.00"
-          value={amountInput}
-          onChange={(e) => {
-            setAmountInput(e.target.value);
-            setError("");
-          }}
+      {method === "bank" ? (
+        <>
+          <WalletInlineInput
+            id="account-name"
+            label="Account name"
+            value={resolvedAccountName}
+            onChange={setAccountName}
+          />
+          <WalletInlineInput
+            id="account-number"
+            label="Account number"
+            value={accountNumber}
+            onChange={setAccountNumber}
+            placeholder="Bank account number"
+          />
+          <WalletSelect
+            label="Bank"
+            value={bankId}
+            onChange={setBankId}
+            options={WITHDRAW_BANKS.map((bank) => ({
+              id: bank.id,
+              label: bank.label,
+            }))}
+          />
+        </>
+      ) : null}
+
+      {method === "crypto" ? (
+        <WalletInlineInput
+          id="crypto-address"
+          label="Payout address"
+          value={cryptoAddress}
+          onChange={setCryptoAddress}
+          placeholder="0x..."
         />
-        {amountCents > 0 && !exceedsBalance ? (
-          <p className="text-sm text-zinc-400">
-            Withdrawal total:{" "}
-            <span className="text-white font-semibold">
-              {formatBalance(amountCents, currency)}
-            </span>
-          </p>
-        ) : null}
-        {exceedsBalance && amountCents > 0 ? (
-          <p className="text-sm text-red-400">Exceeds available balance.</p>
-        ) : null}
-        <p className="text-xs text-zinc-600">
-          Minimum {formatBalance(minAmountCents, currency)}
-        </p>
-      </div>
+      ) : null}
+
+      {method === "paypal" ? (
+        <WalletInlineInput
+          id="paypal-payout"
+          label="PayPal email"
+          value={resolvedPaypal}
+          onChange={setPaypalEmail}
+        />
+      ) : null}
+
+      {exceedsBalance && amountCents > 0 ? (
+        <p className="text-sm text-red-400">Exceeds available balance.</p>
+      ) : null}
 
       {error ? (
         <div className="flex items-center gap-2 text-sm text-red-400">
@@ -218,15 +312,13 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
         </div>
       ) : null}
 
-      <Button
-        className="w-full"
-        size="lg"
-        onClick={goToConfirm}
+      <WalletActionButton
+        onClick={() => void handleConfirm()}
+        isLoading={processing}
         disabled={!amountValid}
       >
-        <ArrowDownToLine className="h-5 w-5" />
-        Continue to confirm
-      </Button>
+        Withdraw
+      </WalletActionButton>
     </div>
   );
 }

@@ -26,10 +26,22 @@ export interface WalletTransferResult {
   transferAmount: number;
 }
 
+export type WithdrawMethod = "bank" | "crypto" | "paypal";
+
+export interface WithdrawDestination {
+  method: WithdrawMethod;
+  accountName?: string;
+  accountNumber?: string;
+  bankName?: string;
+  cryptoAddress?: string;
+  paypalEmail?: string;
+}
+
 export interface CreateWithdrawInput {
   userId: string;
   amount: number;
   currency?: string;
+  destination?: WithdrawDestination;
 }
 
 export type TransactionType = "deposit" | "withdraw";

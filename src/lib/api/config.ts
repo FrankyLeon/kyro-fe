@@ -6,6 +6,7 @@ export interface ApiEndpoints {
   gameLaunch: string;
   gameKick: string;
   walletDeposit: string;
+  walletDepositDestinations: string;
   walletWithdraw: string;
   walletTransactions: string;
   playerBalance: string;
@@ -30,6 +31,7 @@ const defaultEndpoints: ApiEndpoints = {
   gameLaunch: "/game/launch",
   gameKick: "/game/kick",
   walletDeposit: "/wallet/deposit",
+  walletDepositDestinations: "/wallet/deposit-destinations",
   walletWithdraw: "/wallet/withdraw",
   walletTransactions: "/wallet/transactions",
   playerBalance: "/player/balance",

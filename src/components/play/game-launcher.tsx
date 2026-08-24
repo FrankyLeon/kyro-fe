@@ -314,7 +314,9 @@ export function GameLauncher({ game }: GameLauncherProps) {
             </p>
           ) : null}
 
-          <DepositFlow onSuccess={() => void handleDepositSuccess()} />
+          <div className="mx-auto max-w-[420px]">
+            <DepositFlow onSuccess={() => void handleDepositSuccess()} />
+          </div>
         </div>
       </div>
     );

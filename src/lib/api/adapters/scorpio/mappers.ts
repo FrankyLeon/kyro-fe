@@ -33,7 +33,7 @@ import type {
   ScorpioWalletTransferRaw,
 } from "./types";
 
-const DEPOSIT_METHODS: DepositMethod[] = ["card", "paypal", "crypto"];
+const DEPOSIT_METHODS: DepositMethod[] = ["bank", "card", "paypal", "crypto"];
 const DEPOSIT_STATUSES: DepositStatus[] = ["pending", "completed", "failed"];
 
 function slugify(value: string): string {
