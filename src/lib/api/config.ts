@@ -3,7 +3,7 @@ export interface ApiEndpoints {
   providerList: string;
   providerSettings: string;
   gameList: (providerId: string | number) => string;
-  gameLaunch: string;
+  gameLaunch: (slug: string) => string;
   gameKick: string;
   walletDeposit: string;
   walletDepositDestinations: string;
@@ -28,7 +28,7 @@ const defaultEndpoints: ApiEndpoints = {
   providerSettings: "/provider/settings",
   gameList: (providerId) =>
     `/game/list/${encodeURIComponent(String(providerId))}`,
-  gameLaunch: "/game/launch",
+  gameLaunch: (slug) => `/games/${encodeURIComponent(slug)}/launch`,
   gameKick: "/game/kick",
   walletDeposit: "/wallet/deposit",
   walletDepositDestinations: "/wallet/deposit-destinations",

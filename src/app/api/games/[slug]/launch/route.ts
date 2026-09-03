@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getBearerToken } from "@/lib/api/server/get-bearer-token";
 import { launchGame } from "@/lib/api/server/games/launch";
-import { parseGameSlug } from "@/lib/api/server/games/slug";
 
 interface LaunchRouteContext {
   params: Promise<{ slug: string }>;
@@ -25,11 +24,6 @@ export async function POST(request: Request, context: LaunchRouteContext) {
       );
     }
 
-    const game = parseGameSlug(slug);
-    if (!game) {
-      return NextResponse.json({ message: "Game not found." }, { status: 404 });
-    }
-
     const body = (await request.json().catch(() => ({}))) as {
       returnUrl?: string;
       playerExternalId?: string;
@@ -46,9 +40,8 @@ export async function POST(request: Request, context: LaunchRouteContext) {
     }
 
     const result = await launchGame(token, {
+      slug: slug.trim(),
       playerExternalId,
-      providerId: game.providerId,
-      gameCode: game.gameCode,
       returnUrl: body.returnUrl?.trim() || undefined,
       currency: body.currency,
       language: body.language,

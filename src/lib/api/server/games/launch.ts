@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { GameLaunchInput, GameLaunchResult } from "@/types/games";
+import type { GameLaunchResult } from "@/types/games";
 import {
   mapScorpioLaunch,
   type ScorpioLaunchRaw,
@@ -8,24 +8,41 @@ import {
 import { getApiConfig } from "../../config";
 import { backendFetch, bearerAuthHeaders, parseApiResponse } from "../http";
 
+export interface ServerGameLaunchInput {
+  slug: string;
+  playerExternalId: string;
+  returnUrl?: string;
+  currency?: string;
+  language?: string;
+  rtp?: number;
+}
+
 export async function launchGame(
   token: string,
-  input: GameLaunchInput
+  input: ServerGameLaunchInput
 ): Promise<GameLaunchResult> {
   const { endpoints } = getApiConfig();
 
-  const res = await backendFetch(endpoints.gameLaunch, {
+  const body: Record<string, string | number> = {
+    playerExternalId: input.playerExternalId,
+  };
+  if (input.returnUrl) {
+    body.returnUrl = input.returnUrl;
+  }
+  if (input.language) {
+    body.language = input.language;
+  }
+  if (input.currency) {
+    body.currency = input.currency;
+  }
+  if (input.rtp !== undefined) {
+    body.rtp = input.rtp;
+  }
+
+  const res = await backendFetch(endpoints.gameLaunch(input.slug), {
     method: "POST",
     headers: bearerAuthHeaders(token),
-    body: JSON.stringify({
-      playerExternalId: input.playerExternalId,
-      providerId: input.providerId,
-      gameCode: input.gameCode,
-      language: input.language ?? "en",
-      currency: input.currency ?? "USD",
-      returnUrl: input.returnUrl,
-      rtp: input.rtp ?? 0,
-    }),
+    body: JSON.stringify(body),
   });
 
   const raw = await parseApiResponse<ScorpioLaunchRaw>(res);
