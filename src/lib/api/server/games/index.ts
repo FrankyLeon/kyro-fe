@@ -4,6 +4,7 @@ import type { Game } from "@/types";
 import { fetchAllGames, fetchGameBySlug } from "./catalog";
 
 export { fetchAllGames, fetchGameBySlug, resetGamesCache } from "./catalog";
+export { fetchGameCatalog } from "./catalog-page";
 export { kickGame } from "./kick";
 export { launchGame } from "./launch";
 export { fetchProviders, fetchProviderSettings } from "./providers";

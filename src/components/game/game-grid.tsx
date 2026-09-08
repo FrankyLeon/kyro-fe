@@ -1,13 +1,15 @@
 import Link from "next/link";
 import type { Game } from "@/types";
 import { GameCard } from "./game-card";
+import { cn } from "@/lib/utils";
 
 interface GameGridProps {
   games: Game[];
   emptyMessage?: string;
+  className?: string;
 }
 
-export function GameGrid({ games, emptyMessage }: GameGridProps) {
+export function GameGrid({ games, emptyMessage, className }: GameGridProps) {
   if (games.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-zinc-700 py-16 text-center space-y-3">
@@ -27,7 +29,12 @@ export function GameGrid({ games, emptyMessage }: GameGridProps) {
   }
 
   return (
-    <div className="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
+    <div
+      className={cn(
+        "grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7",
+        className
+      )}
+    >
       {games.map((game) => (
         <GameCard key={game.id} game={game} />
       ))}

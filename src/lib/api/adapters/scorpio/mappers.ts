@@ -99,7 +99,7 @@ export function mapScorpioPlatformGame(
     coinPrice: 0,
     coverImage: resolveGameImage(raw.gameImage, slug),
     bannerImage: resolveGameImage(raw.gameImage, `${slug}-banner`),
-    rating: 0,
+    rating: Number(raw.rating ?? 0) || 0,
     reviewCount: 0,
     featured: Boolean(context.featured),
     tags: [context.providerName],
@@ -109,6 +109,13 @@ export function mapScorpioPlatformGame(
     maxPlayers: 1,
     playMode: "browser" as const,
   };
+}
+
+export function mapScorpioCatalogGame(raw: ScorpioPlatformGameRaw): Game {
+  return mapScorpioPlatformGame(raw, {
+    providerId: String(raw.providerId ?? "0"),
+    providerName: raw.providerName ?? SITE_BRAND.name,
+  });
 }
 
 function normalizePlayMode(): Game["playMode"] {

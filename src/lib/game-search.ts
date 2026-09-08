@@ -1,8 +1,18 @@
 import Fuse, { type IFuseOptions } from "fuse.js";
 import type { Game } from "@/types";
 
+export type GameSort = "rating" | "az" | "za";
+
+export const GAME_SORT_OPTIONS: { value: GameSort; label: string }[] = [
+  { value: "rating", label: "Rating" },
+  { value: "az", label: "A To Z" },
+  { value: "za", label: "Z To A" },
+];
+
 export interface GameSearchOptions {
   query?: string;
+  provider?: string;
+  sort?: GameSort;
 }
 
 const FUSE_OPTIONS = {
@@ -18,6 +28,18 @@ const FUSE_OPTIONS = {
   includeScore: true,
 } satisfies IFuseOptions<Game>;
 
+export function parseGameSort(value?: string | null): GameSort {
+  if (value === "za") return "za";
+  if (value === "az") return "az";
+  return "rating";
+}
+
+export function listGameProviders(games: Game[]): string[] {
+  return [...new Set(games.map((game) => game.developer).filter(Boolean))].sort(
+    (a, b) => a.localeCompare(b)
+  );
+}
+
 export function createGameSearchIndex(games: Game[]): Fuse<Game> {
   return new Fuse(games, FUSE_OPTIONS);
 }
@@ -28,12 +50,39 @@ export function searchGames(
   options: GameSearchOptions = {}
 ): Game[] {
   const query = options.query?.trim() ?? "";
-  if (!query) return games;
+  const provider = options.provider?.trim() ?? "";
+  const sort = options.sort ?? "rating";
 
-  const matches = fuse.search(query);
-  const matchedIds = new Set(matches.map((match) => match.item.id));
+  let result = query
+    ? (() => {
+        const matchedIds = new Set(
+          fuse.search(query).map((match) => match.item.id)
+        );
+        return games.filter((game) => matchedIds.has(game.id));
+      })()
+    : [...games];
 
-  return games.filter((game) => matchedIds.has(game.id));
+  if (provider) {
+    const needle = provider.toLowerCase();
+    result = result.filter(
+      (game) => game.developer.toLowerCase() === needle
+    );
+  }
+
+  if (sort === "rating") {
+    result.sort((a, b) => {
+      const diff = (b.rating ?? 0) - (a.rating ?? 0);
+      if (diff !== 0) return diff;
+      return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+    });
+  } else {
+    result.sort((a, b) =>
+      a.title.localeCompare(b.title, undefined, { sensitivity: "base" })
+    );
+    if (sort === "za") result.reverse();
+  }
+
+  return result;
 }
 
 export function getSearchSuggestions(

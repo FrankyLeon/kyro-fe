@@ -4,21 +4,10 @@ import { useAuth } from "@/context/auth-context";
 
 interface StoreHeaderProps {
   totalCount: number;
-  rangeStart: number;
-  rangeEnd: number;
-  page: number;
-  totalPages: number;
   searchQuery?: string;
 }
 
-export function StoreHeader({
-  totalCount,
-  rangeStart,
-  rangeEnd,
-  page,
-  totalPages,
-  searchQuery,
-}: StoreHeaderProps) {
+export function StoreHeader({ totalCount, searchQuery }: StoreHeaderProps) {
   const { user, isLoading } = useAuth();
 
   const actionHint =
@@ -31,9 +20,7 @@ export function StoreHeader({
       ? searchQuery
         ? `No games match "${searchQuery}"`
         : "No games found"
-      : totalPages > 1
-        ? `Showing ${rangeStart.toLocaleString()}–${rangeEnd.toLocaleString()} of ${totalCount.toLocaleString()} games`
-        : `${totalCount.toLocaleString()} games`;
+      : `${totalCount.toLocaleString()} games`;
 
   return (
     <div className="mb-8">
@@ -46,11 +33,6 @@ export function StoreHeader({
           <span className="text-zinc-600"> · {actionHint}</span>
         ) : null}
       </p>
-      {totalPages > 1 ? (
-        <p className="mt-1 text-xs font-medium uppercase tracking-wider text-amber-500/80">
-          Page {page} of {totalPages}
-        </p>
-      ) : null}
     </div>
   );
 }

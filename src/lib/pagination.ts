@@ -1,4 +1,15 @@
-export const STORE_PAGE_SIZE = 24;
+export const STORE_GRID_COLUMNS = 7;
+export const STORE_INITIAL_ROWS = 10;
+export const STORE_MORE_ROWS = 6;
+export const STORE_INITIAL_SIZE = STORE_GRID_COLUMNS * STORE_INITIAL_ROWS;
+export const STORE_MORE_SIZE = STORE_GRID_COLUMNS * STORE_MORE_ROWS;
+export const STORE_PAGE_SIZE = STORE_INITIAL_SIZE;
+
+export function storeVisibleCount(page: number): number {
+  const safePage = Math.max(1, page);
+  if (safePage === 1) return STORE_INITIAL_SIZE;
+  return STORE_INITIAL_SIZE + (safePage - 1) * STORE_MORE_SIZE;
+}
 
 export interface PaginationMeta {
   page: number;

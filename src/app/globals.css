@@ -232,6 +232,19 @@ body {
   }
 }
 
+@keyframes catalog-load {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
+.catalog-load-bar {
+  animation: catalog-load 1s linear infinite;
+}
+
 .text-shimmer {
   background: linear-gradient(
     90deg,

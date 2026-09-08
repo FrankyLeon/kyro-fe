@@ -10,6 +10,7 @@ export interface ScorpioPlatformGameRaw {
   status?: number | string;
   inMaintenance?: boolean;
   providerName?: string;
+  rating?: number | string;
 }
 
 /** Raw provider from ScorpioPlay platform API (`/v1/provider/list`). */

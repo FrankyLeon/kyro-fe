@@ -2,19 +2,29 @@
 
 import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
-import { Search, Sparkles, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import type { Game } from "@/types";
 import { resolveGameImage } from "@/lib/game-image";
-import { getSearchSuggestions, splitHighlight } from "@/lib/game-search";
+import {
+  GAME_SORT_OPTIONS,
+  getSearchSuggestions,
+  splitHighlight,
+  type GameSort,
+} from "@/lib/game-search";
 import { formatProviderLabel } from "@/lib/site-copy";
 import type Fuse from "fuse.js";
 import { cn } from "@/lib/utils";
+import { StoreFilterSelect } from "@/components/store/store-filter-select";
 
 interface StoreSearchProps {
   query: string;
-  resultCount: number;
+  provider: string;
+  sort: GameSort;
+  providers: string[];
   fuse: Fuse<Game>;
   onQueryChange: (query: string) => void;
+  onProviderChange: (provider: string) => void;
+  onSortChange: (sort: GameSort) => void;
   onSelectGame?: (slug: string) => void;
 }
 
@@ -41,9 +51,13 @@ function HighlightedText({ text, query }: { text: string; query: string }) {
 
 export function StoreSearch({
   query,
-  resultCount,
+  provider,
+  sort,
+  providers,
   fuse,
   onQueryChange,
+  onProviderChange,
+  onSortChange,
   onSelectGame,
 }: StoreSearchProps) {
   const listboxId = useId();
@@ -53,6 +67,10 @@ export function StoreSearch({
   const [activeIndex, setActiveIndex] = useState(-1);
 
   const suggestions = open ? getSearchSuggestions(fuse, query, 6) : [];
+  const providerOptions = [
+    { value: "", label: "All" },
+    ...providers.map((name) => ({ value: name, label: name })),
+  ];
 
   useEffect(() => {
     setActiveIndex(-1);
@@ -109,66 +127,55 @@ export function StoreSearch({
   }
 
   return (
-    <div className="space-y-4">
-      <div
-        ref={containerRef}
-        className="relative rounded-2xl glass-card p-4 shadow-xl shadow-black/30"
-      >
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-sm font-medium text-zinc-300">
-            <Sparkles className="h-4 w-4 text-amber-400" />
-            Search games
-          </div>
-          {query ? (
-            <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-300">
-              {resultCount.toLocaleString()} result
-              {resultCount === 1 ? "" : "s"}
-            </span>
-          ) : null}
-        </div>
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+      <div ref={containerRef} className="relative min-w-0 flex-1">
+        <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+        <input
+          ref={inputRef}
+          type="search"
+          role="combobox"
+          aria-expanded={open && suggestions.length > 0}
+          aria-controls={listboxId}
+          aria-autocomplete="list"
+          value={query}
+          onChange={(e) => {
+            onQueryChange(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={handleKeyDown}
+          placeholder="Search"
+          className={cn(
+            "h-12 w-full rounded-lg border border-zinc-700/80 bg-zinc-950/40",
+            "pl-10 pr-10 text-sm text-zinc-100 placeholder:text-zinc-500",
+            "outline-none transition-colors",
+            "hover:border-zinc-500 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20",
+            "[&::-webkit-search-cancel-button]:hidden"
+          )}
+        />
+        {query ? (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+            aria-label="Clear search"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        ) : null}
 
-        <div className="relative z-10">
-          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-          <input
-            ref={inputRef}
-            type="search"
-            role="combobox"
-            aria-expanded={open && suggestions.length > 0}
-            aria-controls={listboxId}
-            aria-autocomplete="list"
-            value={query}
-            onChange={(e) => {
-              onQueryChange(e.target.value);
-              setOpen(true);
-            }}
-            onFocus={() => setOpen(true)}
-            onKeyDown={handleKeyDown}
-            placeholder="Search games by title or provider…"
-            className={cn(
-              "h-12 w-full rounded-xl border border-zinc-800 bg-zinc-950/80",
-              "pl-11 pr-11 text-sm text-zinc-100 placeholder:text-zinc-500",
-              "outline-none transition-all focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20"
-            )}
-          />
-          {query ? (
-            <button
-              type="button"
-              onClick={handleClear}
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
-              aria-label="Clear search"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          ) : null}
-
-          {open && suggestions.length > 0 ? (
-            <ul
-              id={listboxId}
-              role="listbox"
-              className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/40"
-            >
+        {open && suggestions.length > 0 ? (
+          <ul
+            id={listboxId}
+            role="listbox"
+            className="absolute left-0 right-0 top-[calc(100%+0.35rem)] z-20 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/40"
+          >
             {suggestions.map((game, index) => (
-              <li key={game.id} role="option" aria-selected={index === activeIndex}>
+              <li
+                key={game.id}
+                role="option"
+                aria-selected={index === activeIndex}
+              >
                 <button
                   type="button"
                   onMouseEnter={() => setActiveIndex(index)}
@@ -180,13 +187,13 @@ export function StoreSearch({
                       : "text-zinc-200 hover:bg-zinc-900"
                   )}
                 >
-                  <div className="relative h-10 w-8 shrink-0 overflow-hidden rounded-md bg-zinc-800">
+                  <div className="relative h-10 w-7 shrink-0 overflow-hidden rounded-md bg-zinc-800">
                     <Image
                       src={resolveGameImage(game.coverImage, game.slug)}
                       alt=""
                       fill
                       className="object-cover"
-                      sizes="32px"
+                      sizes="28px"
                     />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -200,22 +207,27 @@ export function StoreSearch({
                 </button>
               </li>
             ))}
-              <li className="border-t border-zinc-800 px-3 py-2 text-center text-xs text-zinc-500">
-                ↑↓ navigate · Enter to open · Esc to close
-              </li>
-            </ul>
-          ) : null}
-        </div>
+            <li className="border-t border-zinc-800 px-3 py-2 text-center text-xs text-zinc-500">
+              ↑↓ navigate · Enter to open · Esc to close
+            </li>
+          </ul>
+        ) : null}
       </div>
 
-      {query ? (
-        <p className="text-sm text-zinc-500">
-          Showing results for{" "}
-          <span className="font-medium text-amber-400/90">
-            &ldquo;{query}&rdquo;
-          </span>
-        </p>
-      ) : null}
+      <div className="grid grid-cols-2 gap-2 sm:w-[22rem] sm:shrink-0">
+        <StoreFilterSelect
+          label="Providers"
+          value={provider}
+          options={providerOptions}
+          onChange={onProviderChange}
+        />
+        <StoreFilterSelect
+          label="Sort By"
+          value={sort}
+          options={GAME_SORT_OPTIONS}
+          onChange={(value) => onSortChange(value as GameSort)}
+        />
+      </div>
     </div>
   );
 }

@@ -39,7 +39,7 @@ export async function Footer() {
               {listedProviders.map((provider) => (
                 <li key={provider.providerId}>
                   <Link
-                    href={buildStoreUrl({ q: provider.providerName })}
+                    href={buildStoreUrl({ provider: provider.providerName })}
                     className="hover:text-amber-400 transition-colors"
                   >
                     {provider.providerName}
