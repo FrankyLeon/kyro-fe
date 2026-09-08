@@ -46,17 +46,6 @@ export function PopularGames({
 
   return (
     <>
-      <StoreSearch
-        query={query}
-        provider={provider}
-        sort={sort}
-        providers={providerNames}
-        fuse={fuse}
-        onQueryChange={setQuery}
-        onProviderChange={setProvider}
-        onSortChange={setSort}
-        onSelectGame={(slug) => router.push(`/play/${slug}`)}
-      />
       <div className="mt-8">
         <GameGrid
           games={items}
