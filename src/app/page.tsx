@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Play, Sparkles, Wallet, Zap } from "lucide-react";
-import { fetchGames } from "@/lib/api/server/games";
+import { fetchGameCatalog } from "@/lib/api/server/games";
+import { HOME_POPULAR_SIZE } from "@/lib/pagination";
 import { resolveGameImage } from "@/lib/game-image";
 import { SITE_CTA } from "@/lib/site-copy";
-import { GameGrid } from "@/components/game/game-grid";
 import { HomeHeroActions } from "@/components/home/home-hero-actions";
+import { PopularGames } from "@/components/home/popular-games";
 import { HeroStats } from "@/components/home/hero-stats";
 import { SectionHeading } from "@/components/ui/section-heading";
 
@@ -17,8 +18,12 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const featured = await fetchGames({ featured: true });
-  const all = await fetchGames();
+  const catalog = await fetchGameCatalog({
+    sort: "az",
+    offset: 0,
+    limit: HOME_POPULAR_SIZE,
+  });
+  const featured = catalog.items.slice(0, 1);
 
   return (
     <div>
@@ -154,7 +159,7 @@ export default async function HomePage() {
             </Link>
           }
         />
-        <GameGrid games={all.slice(0, 4)} />
+        <PopularGames games={catalog.items} />
       </section>
     </div>
   );

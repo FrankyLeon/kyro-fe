@@ -19,3 +19,8 @@ export const SITE_CTA = {
 export function formatProviderLabel(game: Pick<Game, "developer">): string {
   return game.developer;
 }
+
+export function formatCategoryLabel(category: Game["category"]): string {
+  if (category === "slots") return "Reels Slots";
+  return category;
+}

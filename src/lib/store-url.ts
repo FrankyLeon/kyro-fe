@@ -1,5 +1,9 @@
+import type { GameSort } from "@/lib/game-search";
+
 export interface StoreQueryParams {
   q?: string;
+  provider?: string;
+  sort?: GameSort;
   page?: number;
 }
 
@@ -11,6 +15,12 @@ export function buildStoreUrl(
 
   if (params.q?.trim()) {
     search.set("q", params.q.trim());
+  }
+  if (params.provider?.trim()) {
+    search.set("provider", params.provider.trim());
+  }
+  if (params.sort && params.sort !== "az") {
+    search.set("sort", params.sort);
   }
   if (params.page && params.page > 1) {
     search.set("page", String(params.page));

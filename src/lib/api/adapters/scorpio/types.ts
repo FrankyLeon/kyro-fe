@@ -42,8 +42,6 @@ export interface ScorpioGameRaw {
   description?: string;
   category?: string;
   scp_game_category?: string;
-  featured?: boolean;
-  scp_game_featured?: boolean;
   coverImage?: string;
   cover_image?: string;
   thumbnail?: string;
@@ -54,9 +52,6 @@ export interface ScorpioGameRaw {
   price_cents?: number;
   coinPrice?: number;
   coin_price?: number;
-  rating?: number;
-  reviewCount?: number;
-  review_count?: number;
   tags?: string[];
   releaseDate?: string;
   release_date?: string;
