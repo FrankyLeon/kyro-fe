@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Play, Sparkles, Wallet, Zap } from "lucide-react";
-import { fetchGameCatalog, fetchProviders } from "@/lib/api/server/games";
-import { STORE_INITIAL_SIZE } from "@/lib/pagination";
+import { fetchGameCatalog } from "@/lib/api/server/games";
+import { HOME_POPULAR_SIZE } from "@/lib/pagination";
 import { resolveGameImage } from "@/lib/game-image";
 import { SITE_CTA } from "@/lib/site-copy";
 import { HomeHeroActions } from "@/components/home/home-hero-actions";
@@ -18,14 +18,11 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [catalog, providers] = await Promise.all([
-    fetchGameCatalog({
-      sort: "rating",
-      offset: 0,
-      limit: STORE_INITIAL_SIZE,
-    }),
-    fetchProviders(),
-  ]);
+  const catalog = await fetchGameCatalog({
+    sort: "az",
+    offset: 0,
+    limit: HOME_POPULAR_SIZE,
+  });
   const featured = catalog.items.slice(0, 1);
 
   return (
@@ -162,11 +159,7 @@ export default async function HomePage() {
             </Link>
           }
         />
-        <PopularGames
-          initialGames={catalog.items}
-          initialTotal={catalog.total}
-          providers={providers}
-        />
+        <PopularGames games={catalog.items} />
       </section>
     </div>
   );

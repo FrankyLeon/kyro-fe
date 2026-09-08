@@ -58,7 +58,7 @@ export function StoreCatalog({
   providers,
   initialQuery = "",
   initialProvider = "",
-  initialSort = "rating",
+  initialSort = "az",
   initialPage,
 }: StoreCatalogProps) {
   const router = useRouter();
@@ -143,7 +143,7 @@ export function StoreCatalog({
         onSortChange={handleSortChange}
         onSelectGame={(slug) => router.push(`/play/${slug}`)}
       />
-      <div id="games" className="mt-8 scroll-mt-24">
+      <div id="games" className="relative z-0 mt-8 scroll-mt-24">
         <GameGrid
           games={items}
           emptyMessage={

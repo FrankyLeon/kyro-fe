@@ -24,8 +24,3 @@ export function formatCategoryLabel(category: Game["category"]): string {
   if (category === "slots") return "Reels Slots";
   return category;
 }
-
-export function formatGameRating(rating: number): string {
-  if (!Number.isFinite(rating) || rating <= 0) return "0";
-  return Number.isInteger(rating) ? String(rating) : rating.toFixed(1);
-}

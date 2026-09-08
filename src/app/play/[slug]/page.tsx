@@ -5,12 +5,10 @@ import {
   ArrowLeft,
   Building2,
   ExternalLink,
-  Star,
   Users,
 } from "lucide-react";
 import { fetchGameBySlug } from "@/lib/api/server/games";
 import { GameLauncher } from "@/components/play/game-launcher";
-import { Badge } from "@/components/ui/badge";
 import { resolveGameImage } from "@/lib/game-image";
 import { PlayGate } from "./play-gate";
 
@@ -67,11 +65,6 @@ export default async function PlayPage({ params }: PlayPageProps) {
           </div>
 
           <div className="min-w-0 flex-1 pb-1 text-center sm:text-left">
-            {game.featured ? (
-              <div className="mb-2.5 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-                <Badge variant="gold">Featured</Badge>
-              </div>
-            ) : null}
             <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
               {game.title}
             </h1>
@@ -79,13 +72,6 @@ export default async function PlayPage({ params }: PlayPageProps) {
               {game.shortDescription}
             </p>
             <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-sm text-zinc-500 sm:justify-start">
-              <span className="flex items-center gap-1">
-                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                <span className="font-medium text-zinc-300">{game.rating}</span>
-                <span className="text-zinc-600">
-                  ({game.reviewCount.toLocaleString()})
-                </span>
-              </span>
               <span className="flex items-center gap-1">
                 <Users className="h-3.5 w-3.5" />
                 {game.minPlayers}–{game.maxPlayers} players

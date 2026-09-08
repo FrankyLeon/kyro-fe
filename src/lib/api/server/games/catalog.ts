@@ -36,11 +36,10 @@ async function fetchProviderGames(
 
     return rawGames
       .filter((game) => game.status === 1 || game.status === "1")
-      .map((game, index) =>
+      .map((game) =>
         mapScorpioPlatformGame(game, {
           providerId: String(providerId),
           providerName,
-          featured: index === 0,
         })
       );
   } catch {
@@ -76,9 +75,9 @@ export async function fetchAllGames(): Promise<Game[]> {
       )
     );
 
-    const games = lists
-      .flat()
-      .sort((a, b) => a.title.localeCompare(b.title));
+    const games = lists.flat().sort((a, b) =>
+      a.title.localeCompare(b.title, undefined, { sensitivity: "base" })
+    );
 
     cachedGames = games;
     cacheExpiresAt = now + CACHE_TTL_MS;
@@ -119,7 +118,6 @@ export async function fetchGameBySlug(slug: string): Promise<Game | null> {
     return mapScorpioPlatformGame(raw, {
       providerId: String(parsed.providerId),
       providerName: raw.providerName ?? SITE_BRAND.name,
-      featured: false,
     });
   } catch {
     return null;

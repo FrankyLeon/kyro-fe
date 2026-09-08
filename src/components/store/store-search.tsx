@@ -127,8 +127,8 @@ export function StoreSearch({
   }
 
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
-      <div ref={containerRef} className="relative min-w-0 flex-1">
+    <div className="relative z-20 flex flex-col gap-2 sm:flex-row sm:items-stretch">
+      <div ref={containerRef} className="relative z-20 min-w-0 flex-1">
         <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
         <input
           ref={inputRef}
@@ -168,7 +168,7 @@ export function StoreSearch({
           <ul
             id={listboxId}
             role="listbox"
-            className="absolute left-0 right-0 top-[calc(100%+0.35rem)] z-20 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/40"
+            className="absolute left-0 right-0 top-[calc(100%+0.35rem)] z-30 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/40"
           >
             {suggestions.map((game, index) => (
               <li

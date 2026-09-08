@@ -7,6 +7,7 @@ import {
 } from "../../adapters/scorpio";
 import { getApiConfig } from "../../config";
 import { backendFetch, bearerAuthHeaders, parseApiResponse } from "../http";
+import { parseGameSlug } from "./slug";
 
 export interface ServerGameLaunchInput {
   slug: string;
@@ -22,9 +23,15 @@ export async function launchGame(
   input: ServerGameLaunchInput
 ): Promise<GameLaunchResult> {
   const { endpoints } = getApiConfig();
+  const parsed = parseGameSlug(input.slug);
+  if (!parsed) {
+    throw new Error("Game not found.");
+  }
 
   const body: Record<string, string | number> = {
     playerExternalId: input.playerExternalId,
+    providerId: parsed.providerId,
+    gameCode: parsed.gameCode,
   };
   if (input.returnUrl) {
     body.returnUrl = input.returnUrl;
@@ -39,7 +46,7 @@ export async function launchGame(
     body.rtp = input.rtp;
   }
 
-  const res = await backendFetch(endpoints.gameLaunch(input.slug), {
+  const res = await backendFetch(endpoints.gameLaunch, {
     method: "POST",
     headers: bearerAuthHeaders(token),
     body: JSON.stringify(body),

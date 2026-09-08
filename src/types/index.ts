@@ -16,9 +16,6 @@ export interface Game {
   coinPrice: number;
   coverImage: string;
   bannerImage: string;
-  rating: number;
-  reviewCount: number;
-  featured: boolean;
   tags: string[];
   releaseDate: string;
   developer: string;

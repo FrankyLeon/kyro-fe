@@ -1,48 +1,26 @@
 import "server-only";
 
-import {
-  mapScorpioCatalogGame,
-  type ScorpioPlatformGameRaw,
-} from "../../adapters/scorpio";
-import { getApiConfig } from "../../config";
-import { backendFetch, parseApiResponse } from "../http";
-import {
-  buildCatalogSearchParams,
-  type GameCatalogPage,
-  type GameCatalogQuery,
-} from "@/lib/game-catalog";
+import { createGameSearchIndex, searchGames } from "@/lib/game-search";
+import type { GameCatalogPage, GameCatalogQuery } from "@/lib/game-catalog";
+import { fetchAllGames } from "./catalog";
 
+/** Paginated catalog for Store / Show more, built from the provider game lists. */
 export async function fetchGameCatalog(
   query: GameCatalogQuery = {}
 ): Promise<GameCatalogPage> {
-  try {
-    const { endpoints } = getApiConfig();
-    const search = buildCatalogSearchParams(query);
-    const path = search.toString()
-      ? `${endpoints.gameCatalog}?${search.toString()}`
-      : endpoints.gameCatalog;
+  const games = await fetchAllGames();
+  const filtered = searchGames(games, createGameSearchIndex(games), {
+    query: query.q,
+    provider: query.provider,
+    sort: query.sort ?? "az",
+  });
 
-    const res = await backendFetch(path, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    });
+  const offset = Math.max(0, query.offset ?? 0);
+  const limit = query.limit && query.limit > 0 ? query.limit : filtered.length;
+  const items = filtered.slice(offset, offset + limit);
 
-    const raw = await parseApiResponse<{
-      items?: ScorpioPlatformGameRaw[];
-      total?: number;
-    }>(res);
-
-    const items = Array.isArray(raw.items)
-      ? raw.items
-          .filter((game) => game.status === 1 || game.status === "1")
-          .map(mapScorpioCatalogGame)
-      : [];
-
-    return {
-      items,
-      total: Number(raw.total ?? items.length) || 0,
-    };
-  } catch {
-    return { items: [], total: 0 };
-  }
+  return {
+    items,
+    total: filtered.length,
+  };
 }

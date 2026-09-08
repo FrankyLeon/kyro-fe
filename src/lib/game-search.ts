@@ -1,10 +1,9 @@
 import Fuse, { type IFuseOptions } from "fuse.js";
 import type { Game } from "@/types";
 
-export type GameSort = "rating" | "az" | "za";
+export type GameSort = "az" | "za";
 
 export const GAME_SORT_OPTIONS: { value: GameSort; label: string }[] = [
-  { value: "rating", label: "Rating" },
   { value: "az", label: "A To Z" },
   { value: "za", label: "Z To A" },
 ];
@@ -29,9 +28,7 @@ const FUSE_OPTIONS = {
 } satisfies IFuseOptions<Game>;
 
 export function parseGameSort(value?: string | null): GameSort {
-  if (value === "za") return "za";
-  if (value === "az") return "az";
-  return "rating";
+  return value === "za" ? "za" : "az";
 }
 
 export function listGameProviders(games: Game[]): string[] {
@@ -51,7 +48,7 @@ export function searchGames(
 ): Game[] {
   const query = options.query?.trim() ?? "";
   const provider = options.provider?.trim() ?? "";
-  const sort = options.sort ?? "rating";
+  const sort = options.sort ?? "az";
 
   let result = query
     ? (() => {
@@ -69,18 +66,10 @@ export function searchGames(
     );
   }
 
-  if (sort === "rating") {
-    result.sort((a, b) => {
-      const diff = (b.rating ?? 0) - (a.rating ?? 0);
-      if (diff !== 0) return diff;
-      return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
-    });
-  } else {
-    result.sort((a, b) =>
-      a.title.localeCompare(b.title, undefined, { sensitivity: "base" })
-    );
-    if (sort === "za") result.reverse();
-  }
+  result.sort((a, b) =>
+    a.title.localeCompare(b.title, undefined, { sensitivity: "base" })
+  );
+  if (sort === "za") result.reverse();
 
   return result;
 }

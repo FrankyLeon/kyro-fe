@@ -79,7 +79,6 @@ export function mapScorpioPlatformGame(
   context: {
     providerId: string;
     providerName: string;
-    featured?: boolean;
   }
 ): Game {
   const gameCode = raw.gameCode ?? raw.gameID ?? "unknown";
@@ -99,9 +98,6 @@ export function mapScorpioPlatformGame(
     coinPrice: 0,
     coverImage: resolveGameImage(raw.gameImage, slug),
     bannerImage: resolveGameImage(raw.gameImage, `${slug}-banner`),
-    rating: Number(raw.rating ?? 0) || 0,
-    reviewCount: 0,
-    featured: Boolean(context.featured),
     tags: [context.providerName],
     releaseDate: "",
     developer: raw.providerName ?? context.providerName,
@@ -166,9 +162,6 @@ export function mapScorpioGame(raw: ScorpioGameRaw): Game {
     coinPrice: raw.coinPrice ?? raw.coin_price ?? 0,
     coverImage: resolveGameImage(coverSource, slug),
     bannerImage: resolveGameImage(bannerSource, `${slug}-banner`),
-    rating: raw.rating ?? 0,
-    reviewCount: raw.reviewCount ?? raw.review_count ?? 0,
-    featured: Boolean(raw.featured ?? raw.scp_game_featured),
     tags: raw.tags ?? [],
     releaseDate: raw.releaseDate ?? raw.release_date ?? "",
     developer:

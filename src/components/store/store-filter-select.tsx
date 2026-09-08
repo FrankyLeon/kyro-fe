@@ -50,7 +50,7 @@ export function StoreFilterSelect({
   }, []);
 
   return (
-    <div ref={containerRef} className={cn("relative min-w-0", className)}>
+    <div ref={containerRef} className={cn("relative z-20 min-w-0", className)}>
       <button
         type="button"
         aria-haspopup="listbox"
@@ -83,7 +83,7 @@ export function StoreFilterSelect({
         <ul
           id={listboxId}
           role="listbox"
-          className="absolute left-0 right-0 top-[calc(100%+0.35rem)] z-30 max-h-64 overflow-y-auto rounded-lg border border-zinc-800 bg-zinc-950 py-1 shadow-2xl shadow-black/40"
+          className="absolute left-0 right-0 top-[calc(100%+0.35rem)] z-50 max-h-64 overflow-y-auto rounded-lg border border-zinc-800 bg-zinc-950 py-1 shadow-2xl shadow-black/40"
         >
           {options.map((option) => {
             const active = option.value === value;

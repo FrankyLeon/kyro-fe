@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Star, Users, Calendar, Building2 } from "lucide-react";
+import { Users, Calendar, Building2 } from "lucide-react";
 import { fetchGameBySlug } from "@/lib/api/server/games";
 import { resolveGameImage } from "@/lib/game-image";
 import { Badge } from "@/components/ui/badge";
@@ -54,11 +54,6 @@ export default async function GameDetailPage({ params }: GamePageProps) {
             <p className="text-zinc-400 mt-2">{game.shortDescription}</p>
 
             <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-zinc-500">
-              <span className="flex items-center gap-1">
-                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                <span className="text-zinc-300 font-medium">{game.rating}</span>
-                ({game.reviewCount.toLocaleString()} reviews)
-              </span>
               <span className="flex items-center gap-1">
                 <Users className="h-4 w-4" />
                 {game.minPlayers}–{game.maxPlayers} players

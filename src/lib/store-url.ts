@@ -19,7 +19,7 @@ export function buildStoreUrl(
   if (params.provider?.trim()) {
     search.set("provider", params.provider.trim());
   }
-  if (params.sort && params.sort !== "rating") {
+  if (params.sort && params.sort !== "az") {
     search.set("sort", params.sort);
   }
   if (params.page && params.page > 1) {

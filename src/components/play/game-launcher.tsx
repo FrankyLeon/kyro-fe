@@ -8,7 +8,6 @@ import {
   Minimize,
   Play,
   Sparkles,
-  Star,
   Wallet,
   X,
 } from "lucide-react";
@@ -363,10 +362,6 @@ export function GameLauncher({ game }: GameLauncherProps) {
           </p>
 
           <div className="mb-8 flex items-center justify-center gap-3 text-xs text-zinc-500">
-            <span className="inline-flex items-center gap-1 rounded-full border border-zinc-800 bg-zinc-900/60 px-2.5 py-1">
-              <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-              {game.rating} rating
-            </span>
             <span className="inline-flex items-center gap-1 rounded-full border border-zinc-800 bg-zinc-900/60 px-2.5 py-1">
               {game.developer}
             </span>
