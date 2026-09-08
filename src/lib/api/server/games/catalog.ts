@@ -8,8 +8,8 @@ import {
 } from "../../adapters/scorpio";
 import { getApiConfig } from "../../config";
 import { SITE_BRAND } from "@/lib/site-copy";
+import { launchGameCodeFromId, parseGameSlug } from "@/lib/game-slug";
 import { backendFetch, parseApiResponse } from "../http";
-import { parseGameSlug } from "./slug";
 
 let cachedGames: Game[] | null = null;
 let cacheExpiresAt = 0;
@@ -107,11 +107,15 @@ export async function fetchGameBySlug(slug: string): Promise<Game | null> {
     const rawGames = await parseApiResponse<ScorpioPlatformGameRaw[]>(res);
     if (!Array.isArray(rawGames)) return null;
 
-    const raw = rawGames.find(
-      (game) =>
-        (game.gameCode ?? game.gameID ?? "").toLowerCase() ===
-        parsed.gameCode.toLowerCase()
-    );
+    const raw = rawGames.find((game) => {
+      const code =
+        String(game.gameCode ?? "").trim() ||
+        launchGameCodeFromId(
+          String(game.gameID ?? ""),
+          String(parsed.providerId)
+        );
+      return code.toLowerCase() === parsed.gameCode.toLowerCase();
+    });
 
     if (!raw) return null;
 
