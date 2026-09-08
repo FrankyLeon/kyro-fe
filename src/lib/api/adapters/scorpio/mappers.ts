@@ -1,6 +1,7 @@
 import type { AuthSession, Game, GameCategory, User } from "@/types";
 import type { Provider, ProviderSettings } from "@/types/games";
 import { resolveAvatarUrl, resolveGameImage } from "@/lib/game-image";
+import { buildGameSlug, launchGameCodeFromId } from "@/lib/game-slug";
 import { SITE_BRAND } from "@/lib/site-copy";
 import type {
   DepositMethod,
@@ -81,10 +82,13 @@ export function mapScorpioPlatformGame(
     providerName: string;
   }
 ): Game {
-  const gameCode = raw.gameCode ?? raw.gameID ?? "unknown";
+  const gameCode =
+    String(raw.gameCode ?? "").trim() ||
+    launchGameCodeFromId(String(raw.gameID ?? ""), context.providerId) ||
+    "unknown";
   const title = raw.gameName ?? gameCode;
   const id = `${context.providerId}_${gameCode}`;
-  const slug = slugify(`${context.providerId}-${gameCode}`);
+  const slug = buildGameSlug(context.providerId, gameCode);
 
   return {
     id,

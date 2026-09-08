@@ -1,4 +1,5 @@
 import type { GameLaunchResult } from "@/types/games";
+import { getStoredSession } from "../auth";
 import {
   getGameAuthHeaders,
   requireSessionToken,
@@ -46,6 +47,8 @@ export async function launchGame(
     body: JSON.stringify({
       returnUrl,
       playerExternalId: resolvePlayerExternalId(),
+      language: "en",
+      currency: getStoredSession()?.user.currency || "USD",
     }),
   });
 

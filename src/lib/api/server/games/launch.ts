@@ -7,7 +7,7 @@ import {
 } from "../../adapters/scorpio";
 import { getApiConfig } from "../../config";
 import { backendFetch, bearerAuthHeaders, parseApiResponse } from "../http";
-import { parseGameSlug } from "./slug";
+import { parseGameSlug } from "@/lib/game-slug";
 
 export interface ServerGameLaunchInput {
   slug: string;
@@ -32,18 +32,12 @@ export async function launchGame(
     playerExternalId: input.playerExternalId,
     providerId: parsed.providerId,
     gameCode: parsed.gameCode,
+    language: input.language || "en",
+    currency: input.currency || "USD",
+    rtp: Number.isFinite(input.rtp) ? Number(input.rtp) : 0,
   };
   if (input.returnUrl) {
     body.returnUrl = input.returnUrl;
-  }
-  if (input.language) {
-    body.language = input.language;
-  }
-  if (input.currency) {
-    body.currency = input.currency;
-  }
-  if (input.rtp !== undefined) {
-    body.rtp = input.rtp;
   }
 
   const res = await backendFetch(endpoints.gameLaunch, {
