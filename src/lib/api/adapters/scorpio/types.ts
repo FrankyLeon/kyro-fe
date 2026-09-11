@@ -180,4 +180,8 @@ export interface ScorpioWalletTransferRaw {
   deposit_amount?: number;
   withdrawAmount?: number;
   withdraw_amount?: number;
+  status?: string;
+  txn_id?: string;
+  reference?: string;
+  method?: string;
 }

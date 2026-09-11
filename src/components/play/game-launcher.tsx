@@ -15,6 +15,7 @@ import type { Game } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DepositFlow } from "@/components/deposit/deposit-flow";
+import type { DepositRecord } from "@/types/deposit";
 import { kickGame, launchGame } from "@/lib/api/games";
 import { useAuth } from "@/context/auth-context";
 import { resolveGameImage } from "@/lib/game-image";
@@ -230,11 +231,15 @@ export function GameLauncher({ game }: GameLauncherProps) {
     await startGame();
   }
 
-  async function handleDepositSuccess() {
+  async function handleDepositSuccess(transaction: DepositRecord) {
     try {
       await refreshBalance();
     } catch {
-      // Deposit already succeeded; launch can still proceed.
+      // Balance sync can retry from the wallet.
+    }
+
+    if (transaction.status !== "completed") {
+      return;
     }
 
     setShowDeposit(false);
@@ -314,7 +319,7 @@ export function GameLauncher({ game }: GameLauncherProps) {
           ) : null}
 
           <div className="mx-auto max-w-[420px]">
-            <DepositFlow onSuccess={() => void handleDepositSuccess()} />
+            <DepositFlow onSuccess={(tx) => void handleDepositSuccess(tx)} />
           </div>
         </div>
       </div>

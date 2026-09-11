@@ -17,7 +17,8 @@ export function PaymentPayPalForm({
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4 text-sm text-zinc-400">
-        You will be redirected to PayPal to authorize this deposit.
+        Send the deposit to the operator PayPal account shown above, then
+        confirm here. Your balance is credited after the payment is approved.
       </div>
       <Input
         id="paypal-email"

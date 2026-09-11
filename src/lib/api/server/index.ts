@@ -12,6 +12,7 @@ export {
 } from "./games";
 export { createDeposit } from "./wallet/deposit";
 export { fetchDepositDestinations } from "./wallet/deposit-destinations";
+export { fetchWithdrawDestinations } from "./wallet/withdraw-destinations";
 export { fetchTransactions } from "./wallet/transactions";
 export { createWithdraw } from "./wallet/withdraw";
 export { fetchPlayerBalance } from "./player/balance";

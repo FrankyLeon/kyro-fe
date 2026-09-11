@@ -3,7 +3,7 @@ import type {
   DepositDestinations,
   DepositMethod,
 } from "@/types/deposit";
-import type { WithdrawMethod } from "@/types/wallet";
+import type { WithdrawDestinations, WithdrawMethod } from "@/types/wallet";
 
 export interface PaymentOption<T extends string = string> {
   id: T;
@@ -97,6 +97,16 @@ export const FALLBACK_DEPOSIT_DESTINATIONS: DepositDestinations = {
   },
 };
 
+export const FALLBACK_WITHDRAW_DESTINATIONS: WithdrawDestinations = {
+  methods: WITHDRAW_PAYMENT_OPTIONS.map((option) => ({
+    id: option.id,
+    label: option.label,
+    enabled: true,
+  })),
+  banks: DEPOSIT_BANKS.map((bank) => ({ id: bank.id, label: bank.label })),
+  currencies: [...WITHDRAW_CURRENCIES],
+};
+
 function asString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -158,5 +168,38 @@ export function normalizeDepositDestinations(
     card: {
       instructions: asLines(raw.card?.instructions),
     },
+  };
+}
+
+export function normalizeWithdrawDestinations(
+  raw: Partial<WithdrawDestinations> | null | undefined
+): WithdrawDestinations {
+  const fallback = FALLBACK_WITHDRAW_DESTINATIONS;
+  if (!raw) return fallback;
+
+  const methods = (raw.methods ?? fallback.methods).map((method) => ({
+    id: method.id,
+    label:
+      asString(method.label) ||
+      fallback.methods.find((item) => item.id === method.id)?.label ||
+      method.id,
+    enabled: method.enabled !== false,
+  }));
+
+  const banks = (raw.banks ?? fallback.banks)
+    .map((bank) => ({
+      id: asString(bank.id) || bank.id,
+      label: asString(bank.label) || bank.id,
+    }))
+    .filter((bank) => bank.id);
+
+  const currencies = (raw.currencies ?? fallback.currencies)
+    .map(asString)
+    .filter(Boolean);
+
+  return {
+    methods: methods.length > 0 ? methods : fallback.methods,
+    banks: banks.length > 0 ? banks : fallback.banks,
+    currencies: currencies.length > 0 ? currencies : fallback.currencies,
   };
 }

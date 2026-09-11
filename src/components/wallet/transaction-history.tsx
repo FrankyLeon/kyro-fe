@@ -109,7 +109,13 @@ export function TransactionHistory({ refreshKey = 0 }: TransactionHistoryProps) 
             </div>
             <Badge
               variant={tx.status === "completed" ? "category" : "default"}
-              className="capitalize"
+              className={
+                tx.status === "pending"
+                  ? "capitalize border-amber-500/30 text-amber-300"
+                  : tx.status === "rejected" || tx.status === "failed"
+                    ? "capitalize border-red-500/30 text-red-300"
+                    : "capitalize"
+              }
             >
               {tx.status}
             </Badge>

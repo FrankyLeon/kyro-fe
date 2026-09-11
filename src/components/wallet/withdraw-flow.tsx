@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, CheckCircle2, Info } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { createWithdraw } from "@/lib/api/wallet";
@@ -10,11 +10,8 @@ import {
   parseWithdrawCents,
 } from "@/lib/withdraw-limits";
 import { getWalletMinAmountCents } from "@/lib/wallet-config";
-import {
-  WITHDRAW_BANKS,
-  WITHDRAW_CURRENCIES,
-  WITHDRAW_PAYMENT_OPTIONS,
-} from "@/lib/payment-methods";
+import { WITHDRAW_PAYMENT_OPTIONS } from "@/lib/payment-methods";
+import { useWithdrawDestinations } from "@/hooks/use-withdraw-destinations";
 import type { WithdrawMethod, WalletTransferResult } from "@/types/wallet";
 import { Button } from "@/components/ui/button";
 import { formatWalletAmount, formatWalletNumber } from "@/lib/utils";
@@ -35,15 +32,13 @@ interface WithdrawFlowProps {
 
 export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
   const { user, refreshBalance } = useAuth();
+  const { destinations, loading } = useWithdrawDestinations();
   const [amountInput, setAmountInput] = useState("0");
   const [method, setMethod] = useState<WithdrawMethod>("bank");
-  const [payoutCurrency, setPayoutCurrency] =
-    useState<(typeof WITHDRAW_CURRENCIES)[number]>("USD");
+  const [payoutCurrency, setPayoutCurrency] = useState("USD");
   const [accountName, setAccountName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
-  const [bankId, setBankId] = useState<(typeof WITHDRAW_BANKS)[number]["id"]>(
-    "khan"
-  );
+  const [bankId, setBankId] = useState("khan");
   const [cryptoAddress, setCryptoAddress] = useState("");
   const [paypalEmail, setPaypalEmail] = useState("");
   const [processing, setProcessing] = useState(false);
@@ -52,11 +47,46 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
     null
   );
 
-  const selectedMethod = WITHDRAW_PAYMENT_OPTIONS.find(
-    (item) => item.id === method
-  );
-  const selectedBank =
-    WITHDRAW_BANKS.find((bank) => bank.id === bankId) ?? WITHDRAW_BANKS[0];
+  const paymentOptions = useMemo(() => {
+    const enabledIds = new Set(
+      destinations.methods.filter((item) => item.enabled).map((item) => item.id)
+    );
+    const filtered = WITHDRAW_PAYMENT_OPTIONS.filter((option) =>
+      enabledIds.has(option.id)
+    ).map((option) => ({
+      ...option,
+      label:
+        destinations.methods.find((item) => item.id === option.id)?.label ||
+        option.label,
+    }));
+
+    return filtered.length > 0 ? filtered : WITHDRAW_PAYMENT_OPTIONS;
+  }, [destinations.methods]);
+
+  const banks = destinations.banks.length > 0 ? destinations.banks : [];
+  const currencies =
+    destinations.currencies.length > 0 ? destinations.currencies : ["USD"];
+
+  useEffect(() => {
+    if (!paymentOptions.some((option) => option.id === method)) {
+      setMethod(paymentOptions[0]?.id ?? "bank");
+    }
+  }, [method, paymentOptions]);
+
+  useEffect(() => {
+    if (!currencies.includes(payoutCurrency)) {
+      setPayoutCurrency(currencies[0] ?? "USD");
+    }
+  }, [currencies, payoutCurrency]);
+
+  useEffect(() => {
+    if (banks.length > 0 && !banks.some((bank) => bank.id === bankId)) {
+      setBankId(banks[0].id);
+    }
+  }, [bankId, banks]);
+
+  const selectedMethod = paymentOptions.find((item) => item.id === method);
+  const selectedBank = banks.find((bank) => bank.id === bankId) ?? banks[0];
 
   const nameDefault = user?.displayName || user?.username || "";
 
@@ -126,12 +156,14 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
           method,
           accountName: method === "bank" ? resolvedAccountName : undefined,
           accountNumber: method === "bank" ? accountNumber : undefined,
-          bankName: method === "bank" ? selectedBank.label : undefined,
+          bankName: method === "bank" ? selectedBank?.label : undefined,
           cryptoAddress: method === "crypto" ? cryptoAddress.trim() : undefined,
           paypalEmail: method === "paypal" ? resolvedPaypal.trim() : undefined,
         },
       });
-      await refreshBalance();
+      if (result.status === "completed") {
+        await refreshBalance();
+      }
       setLastResult(result);
       onSuccess?.(result);
     } catch (e) {
@@ -148,10 +180,13 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
   }
 
   if (lastResult) {
+    const pending = lastResult.status !== "completed";
     return (
       <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-8 text-center">
         <CheckCircle2 className="mx-auto mb-4 h-14 w-14 text-emerald-400" />
-        <h2 className="text-xl font-bold text-white">Withdrawal submitted</h2>
+        <h2 className="text-xl font-bold text-white">
+          {pending ? "Withdrawal submitted" : "Withdrawal complete"}
+        </h2>
         <p className="mt-2 text-zinc-400">
           <span className="font-semibold text-zinc-200">
             −
@@ -160,17 +195,18 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
               lastResult.currency
             )}
           </span>{" "}
-          withdrawn from your balance
+          {pending
+            ? "is waiting for review. Your balance is unchanged until approval."
+            : "withdrawn from your balance"}
         </p>
-        <p className="mt-4 text-sm text-zinc-500">
-          New balance:{" "}
-          <span className="font-medium text-white">
-            {formatWalletAmount(
-              Math.round(lastResult.balance * 100),
-              lastResult.currency
-            )}
-          </span>
-        </p>
+        {lastResult.reference ? (
+          <p className="mt-4 text-sm text-zinc-500">
+            Reference:{" "}
+            <span className="font-mono text-zinc-400">
+              {lastResult.reference}
+            </span>
+          </p>
+        ) : null}
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Button onClick={resetFlow} variant="secondary">
             Make another withdrawal
@@ -194,12 +230,16 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
         value={method}
         onChange={setMethod}
         icon={<MethodGlyph kind={selectedMethod?.icon ?? "bank"} />}
-        options={WITHDRAW_PAYMENT_OPTIONS.map((option) => ({
+        options={paymentOptions.map((option) => ({
           id: option.id,
           label: option.label,
           icon: <MethodGlyph kind={option.icon} />,
         }))}
       />
+
+      {loading ? (
+        <p className="px-1 text-xs text-zinc-500">Loading withdrawal methods…</p>
+      ) : null}
 
       <WalletMetaRow
         label={
@@ -248,7 +288,7 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
           label="Currency"
           value={payoutCurrency}
           onChange={setPayoutCurrency}
-          options={WITHDRAW_CURRENCIES.map((code) => ({
+          options={currencies.map((code) => ({
             id: code,
             label: code,
           }))}
@@ -274,7 +314,7 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
             label="Bank"
             value={bankId}
             onChange={setBankId}
-            options={WITHDRAW_BANKS.map((bank) => ({
+            options={banks.map((bank) => ({
               id: bank.id,
               label: bank.label,
             }))}
@@ -317,7 +357,7 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
         isLoading={processing}
         disabled={!amountValid}
       >
-        Withdraw
+        Submit withdrawal
       </WalletActionButton>
     </div>
   );

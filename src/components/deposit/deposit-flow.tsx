@@ -147,6 +147,32 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
       );
       return;
     }
+    if (method === "bank" && !destinations.bank.accountNumber) {
+      setError("Bank deposit details are not configured yet.");
+      return;
+    }
+    if (method === "crypto" && !cryptoAddress) {
+      setError("Crypto deposit addresses are not configured yet.");
+      return;
+    }
+    if (method === "card") {
+      const digits = card.cardNumber.replace(/\D/g, "");
+      if (!card.cardholderName.trim() || digits.length < 13 || !card.expiry || card.cvc.length < 3) {
+        setError("Enter complete card details.");
+        return;
+      }
+    }
+    if (method === "paypal") {
+      const email = paypal.email.trim() || user.email;
+      if (!email) {
+        setError("Enter your PayPal email.");
+        return;
+      }
+      if (!destinations.paypal.email) {
+        setError("PayPal receiving email is not configured yet.");
+        return;
+      }
+    }
 
     setProcessing(true);
     try {
@@ -156,7 +182,10 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
         currency,
         method,
         card: method === "card" ? card : undefined,
-        paypal: method === "paypal" ? paypal : undefined,
+        paypal:
+          method === "paypal"
+            ? { email: paypal.email.trim() || user.email }
+            : undefined,
         crypto: method === "crypto" ? crypto : undefined,
       });
       await refreshBalance();
@@ -177,15 +206,20 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
   }
 
   if (lastTx) {
+    const pending = lastTx.status === "pending";
     return (
       <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-8 text-center">
         <CheckCircle2 className="mx-auto mb-4 h-14 w-14 text-emerald-400" />
-        <h2 className="text-xl font-bold text-white">Deposit complete</h2>
+        <h2 className="text-xl font-bold text-white">
+          {pending ? "Deposit submitted" : "Deposit complete"}
+        </h2>
         <p className="mt-2 text-zinc-400">
           <span className="font-semibold text-white">
             +{formatWalletAmount(lastTx.amountCents, lastTx.currency)}
           </span>{" "}
-          added to your balance
+          {pending
+            ? "is waiting for payment confirmation. Your balance updates after approval."
+            : "added to your balance"}
         </p>
         {lastTx.reference ? (
           <p className="mt-4 text-sm text-zinc-500">
@@ -323,8 +357,8 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
       {method === "bank" ? (
         <p className="flex items-start gap-1.5 px-1 text-[11px] leading-relaxed text-zinc-500">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          Confirm after you send the transfer so we can credit{" "}
-          {formatWalletAmount(amountCents || minAmountCents, currency)}.
+          Confirm after you send the transfer. Your balance is credited after
+          the payment is approved in wp-admin.
         </p>
       ) : null}
 
@@ -340,7 +374,7 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
         isLoading={processing}
         disabled={!amountValid}
       >
-        Confirm deposit
+        {method === "card" ? "Submit deposit" : "I sent the payment"}
       </WalletActionButton>
     </div>
   );

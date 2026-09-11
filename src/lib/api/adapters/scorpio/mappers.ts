@@ -427,6 +427,7 @@ const TRANSACTION_STATUSES: TransactionStatus[] = [
   "pending",
   "completed",
   "failed",
+  "rejected",
 ];
 
 function normalizeTransactionType(raw?: string): TransactionType {
@@ -439,8 +440,10 @@ function normalizeTransactionType(raw?: string): TransactionType {
 }
 
 function normalizeTransactionStatus(raw?: string): TransactionStatus {
-  if (raw && TRANSACTION_STATUSES.includes(raw as TransactionStatus)) {
-    return raw as TransactionStatus;
+  const value = raw?.toLowerCase();
+  if (value === "rejected") return "rejected";
+  if (value && TRANSACTION_STATUSES.includes(value as TransactionStatus)) {
+    return value as TransactionStatus;
   }
   return "completed";
 }
@@ -509,10 +512,13 @@ export function mapScorpioWalletTransfer(
     kind === "withdraw"
       ? withdrawAmount || depositAmount
       : depositAmount || withdrawAmount;
+  const status = normalizeTransactionStatus(raw.status);
 
   return {
     currency,
     balance,
     transferAmount,
+    status,
+    reference: raw.reference ?? raw.txn_id,
   };
 }

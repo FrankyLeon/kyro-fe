@@ -24,6 +24,8 @@ export interface WalletTransferResult {
   balance: number;
   /** Amount deposited or withdrawn in this transaction. */
   transferAmount: number;
+  status: TransactionStatus;
+  reference?: string;
 }
 
 export type WithdrawMethod = "bank" | "crypto" | "paypal";
@@ -46,7 +48,24 @@ export interface CreateWithdrawInput {
 
 export type TransactionType = "deposit" | "withdraw";
 
-export type TransactionStatus = "pending" | "completed" | "failed";
+export type TransactionStatus = "pending" | "completed" | "failed" | "rejected";
+
+export interface WithdrawMethodOption {
+  id: WithdrawMethod;
+  label: string;
+  enabled: boolean;
+}
+
+export interface WithdrawBankOption {
+  id: string;
+  label: string;
+}
+
+export interface WithdrawDestinations {
+  methods: WithdrawMethodOption[];
+  banks: WithdrawBankOption[];
+  currencies: string[];
+}
 
 /** Normalized wallet transaction from `GET /wallet/transactions`. */
 export interface TransactionRecord {
