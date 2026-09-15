@@ -61,11 +61,9 @@ export function WalletMenuProvider({ children }: { children: ReactNode }) {
           className="fixed inset-0 z-[90] flex items-center justify-center p-4"
           role="presentation"
         >
-          <button
-            type="button"
-            aria-label="Close wallet menu"
+          <div
             className="absolute inset-0 bg-zinc-950/75 backdrop-blur-sm"
-            onClick={closeWallet}
+            aria-hidden
           />
           <div
             role="dialog"
