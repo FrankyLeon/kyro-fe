@@ -508,10 +508,11 @@ export function mapScorpioWalletTransfer(
   const balance = Number(raw.balance ?? 0);
   const depositAmount = Number(raw.depositAmount ?? raw.deposit_amount ?? 0);
   const withdrawAmount = Number(raw.withdrawAmount ?? raw.withdraw_amount ?? 0);
+  const amount = Number(raw.amount ?? raw.transferAmount ?? 0);
   const transferAmount =
     kind === "withdraw"
-      ? withdrawAmount || depositAmount
-      : depositAmount || withdrawAmount;
+      ? withdrawAmount || depositAmount || amount
+      : depositAmount || withdrawAmount || amount;
   const status = normalizeTransactionStatus(raw.status);
 
   return {

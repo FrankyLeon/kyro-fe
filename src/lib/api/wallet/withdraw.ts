@@ -1,6 +1,5 @@
 import type { User } from "@/types";
 import type { CreateWithdrawInput, WalletTransferResult } from "@/types/wallet";
-import { mapScorpioWalletTransfer, type ScorpioWalletTransferRaw } from "../adapters/scorpio";
 import { refreshUserBalance } from "../player";
 import {
   getWalletAuthHeaders,
@@ -15,8 +14,7 @@ async function parseWithdrawResponse(
     await parseWalletError(res, "Withdrawal failed.");
   }
 
-  const payload = await res.json().catch(() => null);
-  return mapScorpioWalletTransfer(payload as ScorpioWalletTransferRaw, "withdraw");
+  return (await res.json()) as WalletTransferResult;
 }
 
 export async function createWithdraw(

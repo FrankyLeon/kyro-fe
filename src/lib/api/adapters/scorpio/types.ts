@@ -176,6 +176,8 @@ export interface ScorpioTransactionRecordRaw {
 export interface ScorpioWalletTransferRaw {
   currency?: string;
   balance?: number;
+  amount?: number;
+  transferAmount?: number;
   depositAmount?: number;
   deposit_amount?: number;
   withdrawAmount?: number;

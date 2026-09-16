@@ -189,9 +189,8 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
         </h2>
         <p className="mt-2 text-zinc-400">
           <span className="font-semibold text-zinc-200">
-            −
             {formatWalletAmount(
-              Math.round(lastResult.transferAmount * 100),
+              Math.round((lastResult.transferAmount || amount) * 100),
               lastResult.currency
             )}
           </span>{" "}
