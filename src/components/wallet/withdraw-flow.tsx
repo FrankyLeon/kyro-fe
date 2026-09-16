@@ -32,10 +32,10 @@ interface WithdrawFlowProps {
 
 export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
   const { user, refreshBalance } = useAuth();
-  const { destinations, loading } = useWithdrawDestinations();
+  const { destinations } = useWithdrawDestinations();
   const [amountInput, setAmountInput] = useState("0");
-  const [method, setMethod] = useState<WithdrawMethod>("bank");
-  const [payoutCurrency, setPayoutCurrency] = useState("USD");
+  const [method, setMethod] = useState<WithdrawMethod>("crypto");
+  const [payoutCurrency, setPayoutCurrency] = useState("USDT");
   const [accountName, setAccountName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [bankId, setBankId] = useState("khan");
@@ -65,17 +65,17 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
 
   const banks = destinations.banks.length > 0 ? destinations.banks : [];
   const currencies =
-    destinations.currencies.length > 0 ? destinations.currencies : ["USD"];
+    destinations.currencies.length > 0 ? destinations.currencies : ["USDT"];
 
   useEffect(() => {
     if (!paymentOptions.some((option) => option.id === method)) {
-      setMethod(paymentOptions[0]?.id ?? "bank");
+      setMethod(paymentOptions[0]?.id ?? "crypto");
     }
   }, [method, paymentOptions]);
 
   useEffect(() => {
     if (!currencies.includes(payoutCurrency)) {
-      setPayoutCurrency(currencies[0] ?? "USD");
+      setPayoutCurrency(currencies[0] ?? "USDT");
     }
   }, [currencies, payoutCurrency]);
 
@@ -235,10 +235,6 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
           icon: <MethodGlyph kind={option.icon} />,
         }))}
       />
-
-      {loading ? (
-        <p className="px-1 text-xs text-zinc-500">Loading withdrawal methods…</p>
-      ) : null}
 
       <WalletMetaRow
         label={

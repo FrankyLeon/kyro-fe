@@ -13,16 +13,11 @@ export interface PaymentOption<T extends string = string> {
 }
 
 export const DEPOSIT_PAYMENT_OPTIONS: PaymentOption<DepositMethod>[] = [
-  { id: "bank", label: "Khan Bank", hint: "Local bank transfer", icon: "bank" },
   { id: "crypto", label: "USDT BEP20", hint: "Crypto deposit", icon: "crypto" },
-  { id: "card", label: "Credit / Debit", hint: "Card payment", icon: "card" },
-  { id: "paypal", label: "PayPal", hint: "PayPal checkout", icon: "paypal" },
 ];
 
 export const WITHDRAW_PAYMENT_OPTIONS: PaymentOption<WithdrawMethod>[] = [
-  { id: "bank", label: "Bank transfer", hint: "Payout to bank", icon: "bank" },
   { id: "crypto", label: "USDT BEP20", hint: "Crypto payout", icon: "crypto" },
-  { id: "paypal", label: "PayPal", hint: "PayPal payout", icon: "paypal" },
 ];
 
 export const DEPOSIT_BANKS = [
@@ -56,9 +51,6 @@ export const CRYPTO_NETWORKS: {
   network: string;
 }[] = [
   { id: "USDT", label: "USDT.BEP20", standard: "BEP-20", network: "BNB Smart Chain" },
-  { id: "USDC", label: "USDC.ERC20", standard: "ERC-20", network: "Ethereum" },
-  { id: "ETH", label: "ETH", standard: "ERC-20", network: "Ethereum" },
-  { id: "BTC", label: "BTC", standard: "Bitcoin", network: "Bitcoin" },
 ];
 
 export const CRYPTO_DEPOSIT_ADDRESSES: Record<CryptoCurrency, string> = {
@@ -68,7 +60,7 @@ export const CRYPTO_DEPOSIT_ADDRESSES: Record<CryptoCurrency, string> = {
   BTC: "bc1qkyro9x7k2m4demo8deposit0000",
 };
 
-export const WITHDRAW_CURRENCIES = ["USD", "MNT", "USDT"] as const;
+export const WITHDRAW_CURRENCIES = ["USDT"] as const;
 
 export const FALLBACK_DEPOSIT_DESTINATIONS: DepositDestinations = {
   methods: DEPOSIT_PAYMENT_OPTIONS.map((option) => ({
@@ -139,10 +131,15 @@ export function normalizeDepositDestinations(
     enabled: method.enabled !== false,
   }));
 
-  const remoteNetworks = raw.crypto?.networks ?? [];
+  const remoteNetworks = (raw.crypto?.networks ?? []).filter(
+    (network) => network.id === "USDT"
+  );
+  const cryptoMethods = (methods.length > 0 ? methods : fallback.methods).filter(
+    (method) => method.id === "crypto"
+  );
 
   return {
-    methods: methods.length > 0 ? methods : fallback.methods,
+    methods: cryptoMethods.length > 0 ? cryptoMethods : fallback.methods,
     bank: {
       bankName: asString(raw.bank?.bankName) || fallback.bank.bankName,
       accountNumber: asString(raw.bank?.accountNumber),
@@ -197,9 +194,15 @@ export function normalizeWithdrawDestinations(
     .map(asString)
     .filter(Boolean);
 
+  const usdtCurrencies = (currencies.length > 0 ? currencies : fallback.currencies)
+    .filter((code) => code.toUpperCase() === "USDT");
+  const cryptoMethods = (methods.length > 0 ? methods : fallback.methods).filter(
+    (method) => method.id === "crypto"
+  );
+
   return {
-    methods: methods.length > 0 ? methods : fallback.methods,
+    methods: cryptoMethods.length > 0 ? cryptoMethods : fallback.methods,
     banks: banks.length > 0 ? banks : fallback.banks,
-    currencies: currencies.length > 0 ? currencies : fallback.currencies,
+    currencies: usdtCurrencies.length > 0 ? usdtCurrencies : [...WITHDRAW_CURRENCIES],
   };
 }

@@ -9,7 +9,6 @@ export function useDepositDestinations() {
   const [destinations, setDestinations] = useState<DepositDestinations>(
     FALLBACK_DEPOSIT_DESTINATIONS
   );
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -20,8 +19,6 @@ export function useDepositDestinations() {
         if (!cancelled) setDestinations(data);
       } catch {
         if (!cancelled) setDestinations(FALLBACK_DEPOSIT_DESTINATIONS);
-      } finally {
-        if (!cancelled) setLoading(false);
       }
     }
 
@@ -31,5 +28,5 @@ export function useDepositDestinations() {
     };
   }, []);
 
-  return { destinations, loading };
+  return { destinations };
 }

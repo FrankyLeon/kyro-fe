@@ -17,7 +17,6 @@ import type {
   CardPaymentDetails,
   PayPalPaymentDetails,
   CryptoPaymentDetails,
-  CryptoCurrency,
   DepositRecord,
 } from "@/types/deposit";
 import { Button } from "@/components/ui/button";
@@ -69,9 +68,9 @@ function MissingDestination({ message }: { message: string }) {
 
 export function DepositFlow({ onSuccess }: DepositFlowProps) {
   const { user, refreshBalance } = useAuth();
-  const { destinations, loading } = useDepositDestinations();
+  const { destinations } = useDepositDestinations();
   const [customAmount, setCustomAmount] = useState("");
-  const [method, setMethod] = useState<DepositMethod>("bank");
+  const [method, setMethod] = useState<DepositMethod>("crypto");
   const [card, setCard] = useState<CardPaymentDetails>(emptyCard);
   const [paypal, setPaypal] = useState<PayPalPaymentDetails>({ email: "" });
   const [crypto, setCrypto] = useState<CryptoPaymentDetails>({
@@ -98,15 +97,16 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
   }, [destinations.methods]);
 
   const cryptoNetworks = useMemo(() => {
-    const withAddress = destinations.crypto.networks.filter(
-      (network) => network.address
+    const usdtNetworks = destinations.crypto.networks.filter(
+      (network) => network.id === "USDT"
     );
-    return withAddress.length > 0 ? withAddress : destinations.crypto.networks;
+    const withAddress = usdtNetworks.filter((network) => network.address);
+    return withAddress.length > 0 ? withAddress : usdtNetworks;
   }, [destinations.crypto.networks]);
 
   useEffect(() => {
     if (!paymentOptions.some((option) => option.id === method)) {
-      setMethod(paymentOptions[0]?.id ?? "bank");
+      setMethod(paymentOptions[0]?.id ?? "crypto");
     }
   }, [method, paymentOptions]);
 
@@ -257,10 +257,6 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
         }))}
       />
 
-      {loading ? (
-        <p className="px-1 text-xs text-zinc-500">Loading deposit details…</p>
-      ) : null}
-
       {method === "bank" ? (
         <>
           <InstructionBlock lines={destinations.bank.instructions} />
@@ -274,20 +270,6 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
 
       {method === "crypto" ? (
         <>
-          <p className="px-1 pt-1 text-sm font-medium text-white">
-            Choose currency and standard
-          </p>
-          {cryptoNetworks.length > 0 ? (
-            <WalletSelect
-              label="Currency"
-              value={selectedNetwork?.id ?? crypto.currency}
-              onChange={(id: CryptoCurrency) => setCrypto({ currency: id })}
-              options={cryptoNetworks.map((network) => ({
-                id: network.id,
-                label: network.label,
-              }))}
-            />
-          ) : null}
           {cryptoAddress ? (
             <>
               <div className="py-2">

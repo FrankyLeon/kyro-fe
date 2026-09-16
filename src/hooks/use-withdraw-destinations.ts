@@ -9,7 +9,6 @@ export function useWithdrawDestinations() {
   const [destinations, setDestinations] = useState<WithdrawDestinations>(
     FALLBACK_WITHDRAW_DESTINATIONS
   );
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -20,8 +19,6 @@ export function useWithdrawDestinations() {
         if (!cancelled) setDestinations(data);
       } catch {
         if (!cancelled) setDestinations(FALLBACK_WITHDRAW_DESTINATIONS);
-      } finally {
-        if (!cancelled) setLoading(false);
       }
     }
 
@@ -31,5 +28,5 @@ export function useWithdrawDestinations() {
     };
   }, []);
 
-  return { destinations, loading };
+  return { destinations };
 }
