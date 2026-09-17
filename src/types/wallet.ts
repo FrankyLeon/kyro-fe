@@ -26,6 +26,7 @@ export interface WalletTransferResult {
   transferAmount: number;
   status: TransactionStatus;
   reference?: string;
+  txHash?: string;
 }
 
 export type WithdrawMethod = "bank" | "crypto" | "paypal";
@@ -77,4 +78,5 @@ export interface TransactionRecord {
   status: TransactionStatus;
   createdAt: string;
   reference?: string;
+  txHash?: string;
 }

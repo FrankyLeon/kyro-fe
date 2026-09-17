@@ -198,7 +198,12 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
             ? "is waiting for review. Your balance is unchanged until approval."
             : "withdrawn from your balance"}
         </p>
-        {lastResult.reference ? (
+        {lastResult.txHash ? (
+          <p className="mt-4 text-sm text-zinc-500">
+            Tx:{" "}
+            <span className="font-mono text-zinc-400">{lastResult.txHash}</span>
+          </p>
+        ) : lastResult.reference ? (
           <p className="mt-4 text-sm text-zinc-500">
             Reference:{" "}
             <span className="font-mono text-zinc-400">

@@ -63,6 +63,8 @@ export async function createDeposit(
     body: JSON.stringify({
       ...input,
       userId: user.id,
+      txHash: input.txHash ?? input.crypto?.txHash,
+      from: input.from,
     }),
   });
 

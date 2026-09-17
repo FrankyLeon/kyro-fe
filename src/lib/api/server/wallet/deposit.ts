@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { CreateDepositInput, DepositResult } from "@/types/deposit";
+import { normalizeBep20TxHash } from "@/lib/bep20-tx-hash";
 import {
   mapScorpioDepositResult,
   type ScorpioDepositResultRaw,
@@ -11,6 +12,9 @@ export async function createDeposit(
   token: string,
   input: CreateDepositInput
 ): Promise<DepositResult> {
+  const txHash = normalizeBep20TxHash(input.txHash ?? input.crypto?.txHash ?? "");
+  const from = input.from?.trim().toLowerCase() || undefined;
+
   const body = {
     userId: input.userId,
     playerExternalId: input.userId,
@@ -23,6 +27,10 @@ export async function createDeposit(
     price_cents: input.amountCents,
     currency: input.currency ?? "USD",
     method: input.method,
+    txHash,
+    tx_hash: txHash,
+    from,
+    network: input.method === "crypto" ? "BEP-20" : undefined,
     card: input.card,
     paypal: input.paypal,
     crypto: input.crypto,

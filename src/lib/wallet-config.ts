@@ -1,5 +1,5 @@
-/** Minimum deposit/withdraw amount in dollars (default: $10). */
-const DEFAULT_MIN_AMOUNT_DOLLARS = 10;
+/** Minimum deposit/withdraw amount in dollars (default: $1). */
+const DEFAULT_MIN_AMOUNT_DOLLARS = 1;
 
 function parseWalletMinAmountDollars(): number {
   const raw = process.env.NEXT_PUBLIC_WALLET_MIN_AMOUNT?.trim();
