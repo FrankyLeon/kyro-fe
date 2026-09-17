@@ -120,9 +120,6 @@ export interface ScorpioDepositRecordRaw {
   gateway_txn_id?: string;
   gatewayTxnId?: string;
   currency?: string;
-  txHash?: string;
-  tx_hash?: string;
-  from?: string;
 }
 
 export interface ScorpioDepositResultRaw {
@@ -173,10 +170,6 @@ export interface ScorpioTransactionRecordRaw {
   reference?: string;
   method?: string;
   payment_method?: string;
-  txHash?: string;
-  tx_hash?: string;
-  gateway_txn_id?: string;
-  gateway?: string;
 }
 
 /** Raw wallet transfer payload from the backend API. */
@@ -193,6 +186,4 @@ export interface ScorpioWalletTransferRaw {
   txn_id?: string;
   reference?: string;
   method?: string;
-  txHash?: string;
-  tx_hash?: string;
 }

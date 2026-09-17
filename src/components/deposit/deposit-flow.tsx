@@ -5,11 +5,6 @@ import { AlertCircle, CheckCircle2, Info } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { createDeposit } from "@/lib/api/deposit";
 import {
-  bep20ExplorerTxUrl,
-  normalizeBep20TxHash,
-  shortenTxHash,
-} from "@/lib/bep20-tx-hash";
-import {
   DEFAULT_CURRENCY,
   parseCustomDepositCents,
 } from "@/lib/deposit-packs";
@@ -35,7 +30,6 @@ import {
   WalletAmountInput,
   WalletBalanceField,
   WalletCopyField,
-  WalletInlineInput,
   WalletMetaRow,
   WalletSelect,
 } from "@/components/wallet/wallet-ui";
@@ -82,9 +76,7 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
   const [crypto, setCrypto] = useState<CryptoPaymentDetails>({
     currency: "USDT",
   });
-  const [pastedTxHash, setPastedTxHash] = useState("");
   const [processing, setProcessing] = useState(false);
-  const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [lastTx, setLastTx] = useState<DepositRecord | null>(null);
 
@@ -137,7 +129,6 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
     cryptoNetworks.find((network) => network.id === crypto.currency) ??
     cryptoNetworks[0];
   const cryptoAddress = selectedNetwork?.address ?? "";
-  const pastedHash = normalizeBep20TxHash(pastedTxHash);
   const bankAccount = [destinations.bank.accountNumber, destinations.bank.accountHolder]
     .filter(Boolean)
     .join(" - ");
@@ -145,7 +136,6 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
   async function handleConfirm() {
     if (!user) return;
     setError("");
-    setStatus("");
 
     if (amountCents <= 0) {
       setError("Enter a valid deposit amount.");
@@ -163,10 +153,6 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
     }
     if (method === "crypto" && !cryptoAddress) {
       setError("Crypto deposit addresses are not configured yet.");
-      return;
-    }
-    if (method === "crypto" && !pastedHash) {
-      setError("Paste the BNB Smart Chain transaction hash after you send USDT.");
       return;
     }
     if (method === "card") {
@@ -190,36 +176,23 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
 
     setProcessing(true);
     try {
-      const txHash = method === "crypto" ? pastedHash : "";
-
-      if (method === "crypto") {
-        setStatus(`Verifying ${shortenTxHash(txHash)} …`);
-      }
-
       const result = await createDeposit(user, {
         userId: user.id,
         amountCents,
         currency,
         method,
-        txHash: txHash || undefined,
         card: method === "card" ? card : undefined,
         paypal:
           method === "paypal"
             ? { email: paypal.email.trim() || user.email }
             : undefined,
-        crypto:
-          method === "crypto"
-            ? { ...crypto, txHash: txHash || undefined }
-            : undefined,
+        crypto: method === "crypto" ? crypto : undefined,
       });
       await refreshBalance();
       setLastTx(result.transaction);
       onSuccess?.(result.transaction);
       setCard(emptyCard);
-      setPastedTxHash("");
-      setStatus("");
     } catch (e) {
-      setStatus("");
       setError(e instanceof Error ? e.message : "Deposit failed");
     } finally {
       setProcessing(false);
@@ -228,10 +201,8 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
 
   function resetFlow() {
     setError("");
-    setStatus("");
     setLastTx(null);
     setCustomAmount("");
-    setPastedTxHash("");
   }
 
   if (lastTx) {
@@ -250,19 +221,7 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
             ? "is waiting for payment confirmation. Your balance updates after approval."
             : "added to your balance"}
         </p>
-        {lastTx.txHash ? (
-          <p className="mt-4 text-sm text-zinc-500">
-            Tx:{" "}
-            <a
-              href={bep20ExplorerTxUrl(lastTx.txHash)}
-              target="_blank"
-              rel="noreferrer"
-              className="font-mono text-zinc-300 underline-offset-2 hover:text-white hover:underline"
-            >
-              {shortenTxHash(lastTx.txHash)}
-            </a>
-          </p>
-        ) : lastTx.reference ? (
+        {lastTx.reference ? (
           <p className="mt-4 text-sm text-zinc-500">
             Reference:{" "}
             <span className="font-mono text-zinc-400">{lastTx.reference}</span>
@@ -321,16 +280,6 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
           ) : (
             <MissingDestination message="Crypto deposit addresses are not configured yet." />
           )}
-          <WalletInlineInput
-            id="crypto-txhash"
-            label="Transaction hash"
-            value={pastedTxHash}
-            onChange={(value) => {
-              setPastedTxHash(value);
-              setError("");
-            }}
-            placeholder="0x…"
-          />
           <WalletMetaRow
             label="Min. Amount"
             value={formatWalletNumber(minAmountCents)}
@@ -395,10 +344,6 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
         </p>
       ) : null}
 
-      {status ? (
-        <p className="px-1 text-sm text-zinc-400">{status}</p>
-      ) : null}
-
       {error ? (
         <div className="flex items-center gap-2 text-sm text-red-400">
           <AlertCircle className="h-4 w-4 shrink-0" />
@@ -409,13 +354,9 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
       <WalletActionButton
         onClick={() => void handleConfirm()}
         isLoading={processing}
-        disabled={!amountValid || (method === "crypto" && !pastedHash)}
+        disabled={!amountValid}
       >
-        {method === "card"
-          ? "Submit deposit"
-          : method === "crypto"
-            ? "Credit deposit"
-            : "I sent the payment"}
+        {method === "card" ? "Submit deposit" : "I sent the payment"}
       </WalletActionButton>
     </div>
   );

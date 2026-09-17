@@ -21,8 +21,6 @@ export interface DepositRecord {
   status: DepositStatus;
   createdAt: string;
   reference?: string;
-  txHash?: string;
-  from?: string;
 }
 
 export interface CardPaymentDetails {
@@ -38,7 +36,6 @@ export interface PayPalPaymentDetails {
 
 export interface CryptoPaymentDetails {
   currency: CryptoCurrency;
-  txHash?: string;
 }
 
 export interface CreateDepositInput {
@@ -46,8 +43,6 @@ export interface CreateDepositInput {
   amountCents: number;
   currency?: string;
   method: DepositMethod;
-  txHash?: string;
-  from?: string;
   card?: CardPaymentDetails;
   paypal?: PayPalPaymentDetails;
   crypto?: CryptoPaymentDetails;
@@ -90,14 +85,12 @@ export interface CardDepositDestination {
   instructions: string[];
 }
 
-export interface CryptoDepositSettings {
-  networks: CryptoDepositNetwork[];
-}
-
 export interface DepositDestinations {
   methods: DepositMethodOption[];
   bank: BankDepositDestination;
-  crypto: CryptoDepositSettings;
+  crypto: {
+    networks: CryptoDepositNetwork[];
+  };
   paypal: PaypalDepositDestination;
   card: CardDepositDestination;
 }

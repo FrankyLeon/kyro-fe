@@ -364,7 +364,6 @@ export function mapScorpioDepositRecord(
     raw.txnId ??
     raw.gateway_txn_id ??
     raw.gatewayTxnId;
-  const txHash = raw.txHash ?? raw.tx_hash ?? raw.gateway_txn_id ?? raw.gatewayTxnId;
 
   return {
     id: raw.id ?? raw.txn_id ?? raw.txnId ?? `dep-${Date.now()}`,
@@ -378,8 +377,6 @@ export function mapScorpioDepositRecord(
     status: normalizeDepositStatus(raw.status),
     createdAt: raw.createdAt ?? raw.created_at ?? new Date().toISOString(),
     reference,
-    txHash: txHash || undefined,
-    from: raw.from || undefined,
   };
 }
 
@@ -466,8 +463,6 @@ export function mapScorpioTransaction(
 ): TransactionRecord {
   const reference =
     raw.reference ?? raw.txn_id ?? raw.txnId ?? undefined;
-  const txHash =
-    raw.txHash ?? raw.tx_hash ?? raw.gateway_txn_id ?? raw.gateway ?? undefined;
 
   return {
     id: String(raw.id ?? raw.txn_id ?? raw.txnId ?? `tx-${Date.now()}`),
@@ -478,7 +473,6 @@ export function mapScorpioTransaction(
     status: normalizeTransactionStatus(raw.status),
     createdAt: raw.createdAt ?? raw.created_at ?? new Date().toISOString(),
     reference,
-    txHash: txHash || undefined,
   };
 }
 
@@ -527,6 +521,5 @@ export function mapScorpioWalletTransfer(
     transferAmount,
     status,
     reference: raw.reference ?? raw.txn_id,
-    txHash: raw.txHash ?? raw.tx_hash,
   };
 }

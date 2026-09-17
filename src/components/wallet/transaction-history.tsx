@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { History } from "lucide-react";
 import { fetchTransactionHistory } from "@/lib/api/wallet";
-import { shortenTxHash } from "@/lib/bep20-tx-hash";
 import type { TransactionRecord } from "@/types/wallet";
 import { formatBalance, formatDateTime } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -105,11 +104,7 @@ export function TransactionHistory({ refreshKey = 0 }: TransactionHistoryProps) 
               </p>
               <p className="text-xs text-zinc-500 mt-0.5">
                 {formatDateTime(tx.createdAt)} · {typeLabels[tx.type]}
-                {tx.txHash
-                  ? ` · ${shortenTxHash(tx.txHash)}`
-                  : tx.reference
-                    ? ` · ${tx.reference}`
-                    : ""}
+                {tx.reference ? ` · ${tx.reference}` : ""}
               </p>
             </div>
             <Badge
