@@ -49,9 +49,12 @@ export function WalletMenuProvider({ children }: { children: ReactNode }) {
     };
   }, [open, closeWallet]);
 
-  useEffect(() => {
-    if (!user) setOpen(false);
-  }, [user]);
+  const userId = user?.id ?? null;
+  const [trackedUserId, setTrackedUserId] = useState(userId);
+  if (trackedUserId !== userId) {
+    setTrackedUserId(userId);
+    if (!userId) setOpen(false);
+  }
 
   return (
     <WalletMenuContext.Provider value={{ openWallet, closeWallet }}>

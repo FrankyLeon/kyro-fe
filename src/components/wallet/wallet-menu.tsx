@@ -4,8 +4,6 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DepositFlow } from "@/components/deposit/deposit-flow";
 import { WithdrawFlow } from "@/components/wallet/withdraw-flow";
-import type { DepositRecord } from "@/types/deposit";
-import type { WalletTransferResult } from "@/types/wallet";
 
 export type WalletMenuTab = "deposit" | "withdraw";
 
@@ -24,11 +22,11 @@ export function WalletMenu({
   onSuccess,
   className,
 }: WalletMenuProps) {
-  function handleDepositSuccess(_transaction: DepositRecord) {
+  function handleDepositSuccess() {
     onSuccess?.();
   }
 
-  function handleWithdrawSuccess(_result: WalletTransferResult) {
+  function handleWithdrawSuccess() {
     onSuccess?.();
   }
 

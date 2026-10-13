@@ -25,19 +25,27 @@ export function useGameCatalog({
   const [total, setTotal] = useState(initialTotal);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const requestId = useRef(0);
-  const skipFilterFetch = useRef(true);
+  const filterKey = `${query}\0${provider}\0${sort}`;
+  const [appliedFilterKey, setAppliedFilterKey] = useState(filterKey);
+  const [catalogSource, setCatalogSource] = useState({
+    initialItems,
+    initialTotal,
+  });
 
-  useEffect(() => {
+  if (
+    catalogSource.initialItems !== initialItems ||
+    catalogSource.initialTotal !== initialTotal
+  ) {
+    setCatalogSource({ initialItems, initialTotal });
     setItems(initialItems);
     setTotal(initialTotal);
-    skipFilterFetch.current = true;
-  }, [initialItems, initialTotal]);
+    if (appliedFilterKey !== filterKey) {
+      setAppliedFilterKey(filterKey);
+    }
+  }
 
   useEffect(() => {
-    if (skipFilterFetch.current) {
-      skipFilterFetch.current = false;
-      return;
-    }
+    if (appliedFilterKey === filterKey) return;
 
     const currentRequest = ++requestId.current;
     const timer = window.setTimeout(async () => {
@@ -52,13 +60,14 @@ export function useGameCatalog({
         if (currentRequest !== requestId.current) return;
         setItems(page.items);
         setTotal(page.total);
+        setAppliedFilterKey(filterKey);
       } catch {
         if (currentRequest !== requestId.current) return;
       }
     }, query.trim() ? 300 : 0);
 
     return () => window.clearTimeout(timer);
-  }, [query, provider, sort]);
+  }, [appliedFilterKey, filterKey, provider, query, sort]);
 
   async function loadMore() {
     if (isLoadingMore || items.length >= total) return false;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { AlertCircle, CheckCircle2, Info } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { createWithdraw } from "@/lib/api/wallet";
@@ -28,6 +28,22 @@ import {
 
 interface WithdrawFlowProps {
   onSuccess?: (result: WalletTransferResult) => void;
+}
+
+function resolvePayoutCurrency(
+  method: WithdrawMethod,
+  currencies: string[],
+  current: string
+) {
+  if (method === "crypto") {
+    return currencies.includes("USDT") ? "USDT" : (currencies[0] ?? "USDT");
+  }
+  if (method === "bank") {
+    if (current !== "USDT" && currencies.includes(current)) return current;
+    if (currencies.includes("USD")) return "USD";
+    return currencies.find((code) => code !== "USDT") ?? currencies[0] ?? "USD";
+  }
+  return currencies.includes(current) ? current : (currencies[0] ?? "USDT");
 }
 
 export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
@@ -63,45 +79,42 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
     return filtered.length > 0 ? filtered : WITHDRAW_PAYMENT_OPTIONS;
   }, [destinations.methods]);
 
-  const banks = destinations.banks.length > 0 ? destinations.banks : [];
-  const currencies =
-    destinations.currencies.length > 0 ? destinations.currencies : ["USDT"];
+  const banks = useMemo(
+    () => (destinations.banks.length > 0 ? destinations.banks : []),
+    [destinations.banks]
+  );
+  const currencies = useMemo(
+    () =>
+      destinations.currencies.length > 0 ? destinations.currencies : ["USDT"],
+    [destinations.currencies]
+  );
 
-  useEffect(() => {
-    if (!paymentOptions.some((option) => option.id === method)) {
-      setMethod(paymentOptions[0]?.id ?? "crypto");
-    }
-  }, [method, paymentOptions]);
+  const activeMethod = paymentOptions.some((option) => option.id === method)
+    ? method
+    : (paymentOptions[0]?.id ?? "crypto");
+  if (activeMethod !== method) {
+    setMethod(activeMethod);
+  }
 
-  useEffect(() => {
-    if (!currencies.includes(payoutCurrency)) {
-      setPayoutCurrency(currencies[0] ?? "USDT");
-    }
-  }, [currencies, payoutCurrency]);
+  const activeCurrency = resolvePayoutCurrency(
+    activeMethod,
+    currencies,
+    payoutCurrency
+  );
+  if (activeCurrency !== payoutCurrency) {
+    setPayoutCurrency(activeCurrency);
+  }
 
-  useEffect(() => {
-    if (method === "crypto") {
-      if (currencies.includes("USDT") && payoutCurrency !== "USDT") {
-        setPayoutCurrency("USDT");
-      }
-      return;
-    }
-    if (method === "bank" && payoutCurrency === "USDT") {
-      const fiat = currencies.includes("USD")
-        ? "USD"
-        : currencies.find((code) => code !== "USDT");
-      if (fiat) setPayoutCurrency(fiat);
-    }
-  }, [method, currencies, payoutCurrency]);
+  const activeBankId =
+    banks.length === 0 || banks.some((bank) => bank.id === bankId)
+      ? bankId
+      : banks[0].id;
+  if (activeBankId !== bankId) {
+    setBankId(activeBankId);
+  }
 
-  useEffect(() => {
-    if (banks.length > 0 && !banks.some((bank) => bank.id === bankId)) {
-      setBankId(banks[0].id);
-    }
-  }, [bankId, banks]);
-
-  const selectedMethod = paymentOptions.find((item) => item.id === method);
-  const selectedBank = banks.find((bank) => bank.id === bankId) ?? banks[0];
+  const selectedMethod = paymentOptions.find((item) => item.id === activeMethod);
+  const selectedBank = banks.find((bank) => bank.id === activeBankId) ?? banks[0];
 
   const nameDefault = user?.displayName || user?.username || "";
 
@@ -149,15 +162,15 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
       setError("Amount exceeds your available balance.");
       return;
     }
-    if (method === "bank" && (!resolvedAccountName || !accountNumber)) {
+    if (activeMethod === "bank" && (!resolvedAccountName || !accountNumber)) {
       setError("Enter your account name and number.");
       return;
     }
-    if (method === "crypto" && !cryptoAddress.trim()) {
+    if (activeMethod === "crypto" && !cryptoAddress.trim()) {
       setError("Enter your crypto payout address.");
       return;
     }
-    if (method === "paypal" && !resolvedPaypal.trim()) {
+    if (activeMethod === "paypal" && !resolvedPaypal.trim()) {
       setError("Enter your PayPal email.");
       return;
     }
@@ -166,14 +179,15 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
     try {
       const result = await createWithdraw(user, {
         amount,
-        currency: payoutCurrency || currency,
+        currency: activeCurrency || currency,
         destination: {
-          method,
-          accountName: method === "bank" ? resolvedAccountName : undefined,
-          accountNumber: method === "bank" ? accountNumber : undefined,
-          bankName: method === "bank" ? selectedBank?.label : undefined,
-          cryptoAddress: method === "crypto" ? cryptoAddress.trim() : undefined,
-          paypalEmail: method === "paypal" ? resolvedPaypal.trim() : undefined,
+          method: activeMethod,
+          accountName: activeMethod === "bank" ? resolvedAccountName : undefined,
+          accountNumber: activeMethod === "bank" ? accountNumber : undefined,
+          bankName: activeMethod === "bank" ? selectedBank?.label : undefined,
+          cryptoAddress:
+            activeMethod === "crypto" ? cryptoAddress.trim() : undefined,
+          paypalEmail: activeMethod === "paypal" ? resolvedPaypal.trim() : undefined,
         },
       });
       if (result.status === "completed") {
@@ -246,7 +260,7 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
 
       <WalletSelect
         label="Payments Method"
-        value={method}
+        value={activeMethod}
         onChange={setMethod}
         icon={<MethodGlyph kind={selectedMethod?.icon ?? "bank"} />}
         options={paymentOptions.map((option) => ({
@@ -301,7 +315,7 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
         />
         <WalletSelect
           label="Currency"
-          value={payoutCurrency}
+          value={activeCurrency}
           onChange={setPayoutCurrency}
           options={currencies.map((code) => ({
             id: code,
@@ -310,7 +324,7 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
         />
       </div>
 
-      {method === "bank" ? (
+      {activeMethod === "bank" ? (
         <>
           <WalletInlineInput
             id="account-name"
@@ -327,7 +341,7 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
           />
           <WalletSelect
             label="Bank"
-            value={bankId}
+            value={activeBankId}
             onChange={setBankId}
             options={banks.map((bank) => ({
               id: bank.id,
@@ -337,7 +351,7 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
         </>
       ) : null}
 
-      {method === "crypto" ? (
+      {activeMethod === "crypto" ? (
         <WalletInlineInput
           id="crypto-address"
           label="Payout address"
@@ -347,7 +361,7 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
         />
       ) : null}
 
-      {method === "paypal" ? (
+      {activeMethod === "paypal" ? (
         <WalletInlineInput
           id="paypal-payout"
           label="PayPal email"

@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { Game } from "@/types";
-import { fetchAllGames, fetchGameBySlug } from "./catalog";
+import { fetchAllGames } from "./catalog";
 
 export { fetchAllGames, fetchGameBySlug, resetGamesCache } from "./catalog";
 export { fetchGameCatalog } from "./catalog-page";

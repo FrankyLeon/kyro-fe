@@ -64,17 +64,28 @@ export function StoreSearch({
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(-1);
+  const cursorKey = `${open ? "open" : "closed"}:${query}`;
+  const [cursor, setCursor] = useState({ key: cursorKey, index: -1 });
+  if (cursor.key !== cursorKey) {
+    setCursor({ key: cursorKey, index: -1 });
+  }
+  const activeIndex = cursor.key === cursorKey ? cursor.index : -1;
+
+  function setActiveIndex(value: number | ((index: number) => number)) {
+    setCursor((current) => {
+      const index = current.key === cursorKey ? current.index : -1;
+      return {
+        key: cursorKey,
+        index: typeof value === "function" ? value(index) : value,
+      };
+    });
+  }
 
   const suggestions = open ? getSearchSuggestions(fuse, query, 6) : [];
   const providerOptions = [
     { value: "", label: "All" },
     ...providers.map((name) => ({ value: name, label: name })),
   ];
-
-  useEffect(() => {
-    setActiveIndex(-1);
-  }, [query, open]);
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {

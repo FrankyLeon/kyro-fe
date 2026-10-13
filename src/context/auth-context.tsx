@@ -5,9 +5,10 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useState,
+  useRef,
+  useSyncExternalStore,
 } from "react";
-import type { AuthSession, User } from "@/types";
+import type { User } from "@/types";
 import * as authApi from "@/lib/api/auth";
 import { refreshUserBalance } from "@/lib/api/player";
 
@@ -28,42 +29,57 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function subscribeClientReady() {
+  return () => {};
+}
+
+function getClientReadySnapshot() {
+  return true;
+}
+
+function getServerReadySnapshot() {
+  return false;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const isClient = useSyncExternalStore(
+    subscribeClientReady,
+    getClientReadySnapshot,
+    getServerReadySnapshot
+  );
+  const storedUser = useSyncExternalStore(
+    authApi.subscribeStoredSession,
+    authApi.getStoredUserSnapshot,
+    authApi.getServerUserSnapshot
+  );
+  const user = isClient ? storedUser : null;
+  const isLoading = !isClient;
+  const refreshed = useRef(false);
 
   const refreshBalance = useCallback(async () => {
     if (!authApi.getStoredSession()?.user) return;
 
     try {
-      const updated = await refreshUserBalance();
-      setUser(updated);
+      await refreshUserBalance();
     } catch {
       // Keep the last known balance when sync fails.
     }
   }, []);
 
   useEffect(() => {
-    const session = authApi.getStoredSession();
-    setUser(session?.user ?? null);
-    setIsLoading(false);
-
-    if (session?.user) {
+    if (!isClient || refreshed.current) return;
+    refreshed.current = true;
+    if (authApi.getStoredSession()?.user) {
       void refreshBalance();
     }
-  }, [refreshBalance]);
-
-  const applySession = useCallback((session: AuthSession) => {
-    setUser(session.user);
-  }, []);
+  }, [isClient, refreshBalance]);
 
   const login = useCallback(
     async (email: string, password: string) => {
-      const session = await authApi.login(email, password);
-      applySession(session);
+      await authApi.login(email, password);
       await refreshBalance();
     },
-    [applySession, refreshBalance]
+    [refreshBalance]
   );
 
   const register = useCallback(
@@ -73,25 +89,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       displayName: string,
       avatarUrl?: string
     ) => {
-      const session = await authApi.register(
-        email,
-        password,
-        displayName,
-        avatarUrl
-      );
-      applySession(session);
+      await authApi.register(email, password, displayName, avatarUrl);
       await refreshBalance();
     },
-    [applySession, refreshBalance]
+    [refreshBalance]
   );
 
   const logout = useCallback(() => {
     authApi.logout();
-    setUser(null);
   }, []);
 
   const updateUser = useCallback((u: User) => {
-    setUser(u);
     authApi.updateStoredUser(u);
   }, []);
 

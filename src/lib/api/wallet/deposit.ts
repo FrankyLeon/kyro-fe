@@ -1,9 +1,5 @@
 import type { User } from "@/types";
-import type {
-  CreateDepositInput,
-  DepositRecord,
-  DepositResult,
-} from "@/types/deposit";
+import type { CreateDepositInput, DepositResult } from "@/types/deposit";
 import {
   mapScorpioDepositRecord,
   mapScorpioDepositResult,

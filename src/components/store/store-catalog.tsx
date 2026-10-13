@@ -83,12 +83,29 @@ export function StoreCatalog({
       .sort((a, b) => a.localeCompare(b));
   }, [providers]);
 
-  useEffect(() => {
+  const [appliedInitial, setAppliedInitial] = useState({
+    initialQuery,
+    initialProvider,
+    initialSort,
+    initialPage,
+  });
+  if (
+    appliedInitial.initialQuery !== initialQuery ||
+    appliedInitial.initialProvider !== initialProvider ||
+    appliedInitial.initialSort !== initialSort ||
+    appliedInitial.initialPage !== initialPage
+  ) {
+    setAppliedInitial({
+      initialQuery,
+      initialProvider,
+      initialSort,
+      initialPage,
+    });
     setQuery(initialQuery);
     setProvider(initialProvider);
     setSort(initialSort);
     setPage(initialPage);
-  }, [initialQuery, initialProvider, initialSort, initialPage]);
+  }
 
   useEffect(() => {
     syncStoreUrl(query, provider, sort, page);

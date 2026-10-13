@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { AlertCircle, CheckCircle2, Info } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { createDeposit } from "@/lib/api/deposit";
@@ -99,6 +99,7 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
   const [senderName, setSenderName] = useState("");
   const [senderAccount, setSenderAccount] = useState("");
   const [bankReference, setBankReference] = useState("");
+  const [referenceOwner, setReferenceOwner] = useState("");
   const [pastedTxHash, setPastedTxHash] = useState("");
   const [processing, setProcessing] = useState(false);
   const [status, setStatus] = useState("");
@@ -129,24 +130,31 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
     return withAddress.length > 0 ? withAddress : usdtNetworks;
   }, [destinations.crypto.networks]);
 
-  useEffect(() => {
-    if (!paymentOptions.some((option) => option.id === method)) {
-      setMethod(paymentOptions[0]?.id ?? "crypto");
-    }
-  }, [method, paymentOptions]);
+  const activeMethod = paymentOptions.some((option) => option.id === method)
+    ? method
+    : (paymentOptions[0]?.id ?? "crypto");
+  if (activeMethod !== method) {
+    setMethod(activeMethod);
+  }
 
-  useEffect(() => {
-    if (!cryptoNetworks.some((network) => network.id === crypto.currency)) {
-      const next = cryptoNetworks[0]?.id;
-      if (next) setCrypto({ currency: next });
-    }
-  }, [crypto.currency, cryptoNetworks]);
+  const activeCryptoCurrency = cryptoNetworks.some(
+    (network) => network.id === crypto.currency
+  )
+    ? crypto.currency
+    : (cryptoNetworks[0]?.id ?? crypto.currency);
+  if (activeCryptoCurrency !== crypto.currency) {
+    setCrypto({ currency: activeCryptoCurrency });
+  }
 
-  useEffect(() => {
-    if (user && !bankReference) {
-      setBankReference(makeBankReference(user.username || user.displayName));
-    }
-  }, [user, bankReference]);
+  const nextReferenceOwner = user?.username || user?.displayName || "";
+  if (
+    nextReferenceOwner &&
+    !bankReference &&
+    referenceOwner !== nextReferenceOwner
+  ) {
+    setReferenceOwner(nextReferenceOwner);
+    setBankReference(makeBankReference(nextReferenceOwner));
+  }
 
   if (!user) return null;
 
@@ -155,15 +163,16 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
   const amountCents = parseCustomDepositCents(customAmount);
   const amountValid = amountCents >= minAmountCents;
   const selectedMethod =
-    paymentOptions.find((item) => item.id === method) ?? paymentOptions[0];
+    paymentOptions.find((item) => item.id === activeMethod) ?? paymentOptions[0];
   const selectedNetwork =
-    cryptoNetworks.find((network) => network.id === crypto.currency) ??
+    cryptoNetworks.find((network) => network.id === activeCryptoCurrency) ??
     cryptoNetworks[0];
   const cryptoAddress = selectedNetwork?.address ?? "";
   const pastedHash = normalizeBep20TxHash(pastedTxHash);
   const senderBank =
     DEPOSIT_BANKS.find((bank) => bank.id === senderBankId) ?? DEPOSIT_BANKS[0];
-  const resolvedSenderName = senderName || user.displayName || user.username;
+  const resolvedSenderName =
+    senderName || user.displayName || user.username || "";
   const senderAccountDigits = senderAccount.replace(/\s+/g, "");
   const bankReady = Boolean(
     destinations.bank.accountNumber &&
@@ -187,38 +196,38 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
       );
       return;
     }
-    if (method === "bank" && !destinations.bank.accountNumber) {
+    if (activeMethod === "bank" && !destinations.bank.accountNumber) {
       setError("Bank deposit details are not configured yet.");
       return;
     }
-    if (method === "bank" && !resolvedSenderName.trim()) {
+    if (activeMethod === "bank" && !resolvedSenderName.trim()) {
       setError("Enter the name on the account you transferred from.");
       return;
     }
-    if (method === "bank" && senderAccountDigits.length < 6) {
+    if (activeMethod === "bank" && senderAccountDigits.length < 6) {
       setError("Enter the account number you transferred from.");
       return;
     }
-    if (method === "bank" && !bankReference) {
+    if (activeMethod === "bank" && !bankReference) {
       setError("Transfer description is missing. Refresh and try again.");
       return;
     }
-    if (method === "crypto" && !cryptoAddress) {
+    if (activeMethod === "crypto" && !cryptoAddress) {
       setError("Crypto deposit addresses are not configured yet.");
       return;
     }
-    if (method === "crypto" && !pastedHash) {
+    if (activeMethod === "crypto" && !pastedHash) {
       setError("Paste the BNB Smart Chain transaction hash after you send USDT.");
       return;
     }
-    if (method === "card") {
+    if (activeMethod === "card") {
       const digits = card.cardNumber.replace(/\D/g, "");
       if (!card.cardholderName.trim() || digits.length < 13 || !card.expiry || card.cvc.length < 3) {
         setError("Enter complete card details.");
         return;
       }
     }
-    if (method === "paypal") {
+    if (activeMethod === "paypal") {
       const email = paypal.email.trim() || user.email;
       if (!email) {
         setError("Enter your PayPal email.");
@@ -232,9 +241,9 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
 
     setProcessing(true);
     try {
-      const txHash = method === "crypto" ? pastedHash : "";
+      const txHash = activeMethod === "crypto" ? pastedHash : "";
 
-      if (method === "crypto") {
+      if (activeMethod === "crypto") {
         setStatus(`Verifying ${shortenTxHash(txHash)} …`);
       }
 
@@ -242,19 +251,23 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
         userId: user.id,
         amountCents,
         currency,
-        method,
+        method: activeMethod,
         txHash: txHash || undefined,
-        card: method === "card" ? card : undefined,
+        card: activeMethod === "card" ? card : undefined,
         paypal:
-          method === "paypal"
+          activeMethod === "paypal"
             ? { email: paypal.email.trim() || user.email }
             : undefined,
         crypto:
-          method === "crypto"
-            ? { ...crypto, txHash: txHash || undefined }
+          activeMethod === "crypto"
+            ? {
+                ...crypto,
+                currency: activeCryptoCurrency,
+                txHash: txHash || undefined,
+              }
             : undefined,
         bank:
-          method === "bank"
+          activeMethod === "bank"
             ? {
                 bankId: senderBank.id,
                 bankName: senderBank.label,
@@ -344,7 +357,7 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
 
       <WalletSelect
         label="Payments Method"
-        value={method}
+        value={activeMethod}
         onChange={setMethod}
         icon={<MethodGlyph kind={selectedMethod?.icon ?? "bank"} />}
         options={paymentOptions.map((option) => ({
@@ -354,7 +367,7 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
         }))}
       />
 
-      {method === "bank" ? (
+      {activeMethod === "bank" ? (
         <>
           <InstructionBlock lines={destinations.bank.instructions} />
           {destinations.bank.accountNumber ? (
@@ -386,7 +399,7 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
         </>
       ) : null}
 
-      {method === "crypto" ? (
+      {activeMethod === "crypto" ? (
         <>
           {cryptoAddress ? (
             <>
@@ -416,7 +429,7 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
         </>
       ) : null}
 
-      {method === "card" ? (
+      {activeMethod === "card" ? (
         <div className="space-y-3">
           <InstructionBlock lines={destinations.card.instructions} />
           <div className="rounded-xl border border-white/8 bg-[#1c1e28] p-4">
@@ -425,7 +438,7 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
         </div>
       ) : null}
 
-      {method === "paypal" ? (
+      {activeMethod === "paypal" ? (
         <div className="space-y-3">
           <InstructionBlock lines={destinations.paypal.instructions} />
           {destinations.paypal.email ? (
@@ -456,7 +469,7 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
         }}
       />
 
-      {method !== "crypto" ? (
+      {activeMethod !== "crypto" ? (
         <WalletMetaRow
           label="Min. Amount"
           value={formatWalletNumber(minAmountCents)}
@@ -464,7 +477,7 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
         />
       ) : null}
 
-      {method === "bank" && destinations.bank.accountNumber ? (
+      {activeMethod === "bank" && destinations.bank.accountNumber ? (
         <>
           <WalletSelect
             label="Your bank"
@@ -516,13 +529,13 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
         isLoading={processing}
         disabled={
           !amountValid ||
-          (method === "crypto" && !pastedHash) ||
-          (method === "bank" && !bankReady)
+          (activeMethod === "crypto" && !pastedHash) ||
+          (activeMethod === "bank" && !bankReady)
         }
       >
-        {method === "card"
+        {activeMethod === "card"
           ? "Submit deposit"
-          : method === "crypto"
+          : activeMethod === "crypto"
             ? "Credit deposit"
             : "I sent the payment"}
       </WalletActionButton>

@@ -9,6 +9,57 @@ import {
 
 const SESSION_KEY = "scorpio_session";
 
+let cachedSessionRaw: string | null | undefined;
+let cachedUser: User | null = null;
+const storedSessionListeners = new Set<() => void>();
+
+function notifyStoredSession() {
+  cachedSessionRaw = undefined;
+  storedSessionListeners.forEach((listener) => listener());
+}
+
+export function subscribeStoredSession(onChange: () => void) {
+  storedSessionListeners.add(onChange);
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === null || event.key === SESSION_KEY) onChange();
+  };
+  if (typeof window !== "undefined") {
+    window.addEventListener("storage", onStorage);
+  }
+  return () => {
+    storedSessionListeners.delete(onChange);
+    if (typeof window !== "undefined") {
+      window.removeEventListener("storage", onStorage);
+    }
+  };
+}
+
+export function getStoredUserSnapshot(): User | null {
+  if (typeof window === "undefined") return null;
+  const raw = localStorage.getItem(SESSION_KEY);
+  if (raw === cachedSessionRaw) return cachedUser;
+
+  cachedSessionRaw = raw;
+  if (!raw) {
+    cachedUser = null;
+    return null;
+  }
+
+  try {
+    const session = JSON.parse(raw) as AuthSession;
+    cachedUser = normalizeStoredUser(
+      session.user as User & { coinBalance?: number }
+    );
+  } catch {
+    cachedUser = null;
+  }
+  return cachedUser;
+}
+
+export function getServerUserSnapshot(): User | null {
+  return null;
+}
+
 function normalizeStoredUser(user: User & { coinBalance?: number }): User {
   if (typeof user.balanceCents === "number") {
     return {
@@ -85,6 +136,7 @@ export async function login(
 
   if (typeof window !== "undefined") {
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    notifyStoredSession();
   }
   return session;
 }
@@ -112,6 +164,7 @@ export async function register(
 
   if (typeof window !== "undefined") {
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    notifyStoredSession();
   }
   return session;
 }
@@ -134,6 +187,7 @@ export function getStoredSession(): AuthSession | null {
 export function logout(): void {
   if (typeof window !== "undefined") {
     localStorage.removeItem(SESSION_KEY);
+    notifyStoredSession();
   }
 }
 
@@ -144,5 +198,6 @@ export function updateStoredUser(user: AuthSession["user"]): void {
       SESSION_KEY,
       JSON.stringify({ ...session, user })
     );
+    notifyStoredSession();
   }
 }
