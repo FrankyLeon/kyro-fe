@@ -21,7 +21,7 @@ export const SUPPORT_FAQ: FaqItem[] = [
     category: "deposit",
     question: "Which payment methods are supported?",
     answer:
-      "Card, PayPal, and cryptocurrency (Bitcoin, Ethereum, and USDC). Available methods may vary by region.",
+      "Khan Bank transfer and USDT (BEP-20). Bank deposits are credited after the transfer is approved. Available methods may vary.",
   },
   {
     id: "faq-4",

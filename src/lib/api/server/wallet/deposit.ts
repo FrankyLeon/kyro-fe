@@ -34,6 +34,7 @@ export async function createDeposit(
     card: input.card,
     paypal: input.paypal,
     crypto: input.crypto,
+    bank: input.method === "bank" ? input.bank : undefined,
   };
 
   const res = await backendFetch("/wallet/deposit", {

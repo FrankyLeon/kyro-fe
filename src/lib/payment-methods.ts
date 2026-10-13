@@ -13,10 +13,12 @@ export interface PaymentOption<T extends string = string> {
 }
 
 export const DEPOSIT_PAYMENT_OPTIONS: PaymentOption<DepositMethod>[] = [
+  { id: "bank", label: "Khan Bank", hint: "Bank transfer", icon: "bank" },
   { id: "crypto", label: "USDT BEP20", hint: "Crypto deposit", icon: "crypto" },
 ];
 
 export const WITHDRAW_PAYMENT_OPTIONS: PaymentOption<WithdrawMethod>[] = [
+  { id: "bank", label: "Khan Bank", hint: "Bank payout", icon: "bank" },
   { id: "crypto", label: "USDT BEP20", hint: "Crypto payout", icon: "crypto" },
 ];
 
@@ -60,7 +62,10 @@ export const CRYPTO_DEPOSIT_ADDRESSES: Record<CryptoCurrency, string> = {
   BTC: "bc1qkyro9x7k2m4demo8deposit0000",
 };
 
-export const WITHDRAW_CURRENCIES = ["USDT"] as const;
+export const WITHDRAW_CURRENCIES = ["USD", "USDT"] as const;
+
+const VISIBLE_DEPOSIT_METHODS = new Set<DepositMethod>(["bank", "crypto"]);
+const VISIBLE_WITHDRAW_METHODS = new Set<WithdrawMethod>(["bank", "crypto"]);
 
 export const FALLBACK_DEPOSIT_DESTINATIONS: DepositDestinations = {
   methods: DEPOSIT_PAYMENT_OPTIONS.map((option) => ({
@@ -122,29 +127,32 @@ export function normalizeDepositDestinations(
   const fallback = FALLBACK_DEPOSIT_DESTINATIONS;
   if (!raw) return fallback;
 
-  const methods = (raw.methods ?? fallback.methods).map((method) => ({
-    id: method.id,
-    label:
-      asString(method.label) ||
-      fallback.methods.find((item) => item.id === method.id)?.label ||
-      method.id,
-    enabled: method.enabled !== false,
-  }));
+  const methods = (raw.methods ?? fallback.methods)
+    .filter((method) => VISIBLE_DEPOSIT_METHODS.has(method.id))
+    .map((method) => ({
+      id: method.id,
+      label:
+        asString(method.label) ||
+        fallback.methods.find((item) => item.id === method.id)?.label ||
+        method.id,
+      enabled: method.enabled !== false,
+    }));
 
   const remoteNetworks = (raw.crypto?.networks ?? []).filter(
     (network) => network.id === "USDT"
   );
-  const cryptoMethods = (methods.length > 0 ? methods : fallback.methods).filter(
-    (method) => method.id === "crypto"
-  );
+  const bankInstructions = asLines(raw.bank?.instructions);
 
   return {
-    methods: cryptoMethods.length > 0 ? cryptoMethods : fallback.methods,
+    methods: methods.length > 0 ? methods : fallback.methods,
     bank: {
       bankName: asString(raw.bank?.bankName) || fallback.bank.bankName,
       accountNumber: asString(raw.bank?.accountNumber),
       accountHolder: asString(raw.bank?.accountHolder),
-      instructions: asLines(raw.bank?.instructions),
+      instructions:
+        bankInstructions.length > 0
+          ? bankInstructions
+          : fallback.bank.instructions,
     },
     crypto: {
       networks: (remoteNetworks.length > 0
@@ -174,14 +182,16 @@ export function normalizeWithdrawDestinations(
   const fallback = FALLBACK_WITHDRAW_DESTINATIONS;
   if (!raw) return fallback;
 
-  const methods = (raw.methods ?? fallback.methods).map((method) => ({
-    id: method.id,
-    label:
-      asString(method.label) ||
-      fallback.methods.find((item) => item.id === method.id)?.label ||
-      method.id,
-    enabled: method.enabled !== false,
-  }));
+  const methods = (raw.methods ?? fallback.methods)
+    .filter((method) => VISIBLE_WITHDRAW_METHODS.has(method.id))
+    .map((method) => ({
+      id: method.id,
+      label:
+        asString(method.label) ||
+        fallback.methods.find((item) => item.id === method.id)?.label ||
+        method.id,
+      enabled: method.enabled !== false,
+    }));
 
   const banks = (raw.banks ?? fallback.banks)
     .map((bank) => ({
@@ -194,15 +204,14 @@ export function normalizeWithdrawDestinations(
     .map(asString)
     .filter(Boolean);
 
-  const usdtCurrencies = (currencies.length > 0 ? currencies : fallback.currencies)
-    .filter((code) => code.toUpperCase() === "USDT");
-  const cryptoMethods = (methods.length > 0 ? methods : fallback.methods).filter(
-    (method) => method.id === "crypto"
-  );
+  const payoutCurrencies = (currencies.length > 0 ? currencies : fallback.currencies)
+    .map((code) => code.toUpperCase())
+    .filter((code) => code === "USD" || code === "MNT" || code === "USDT");
 
   return {
-    methods: cryptoMethods.length > 0 ? cryptoMethods : fallback.methods,
+    methods: methods.length > 0 ? methods : fallback.methods,
     banks: banks.length > 0 ? banks : fallback.banks,
-    currencies: usdtCurrencies.length > 0 ? usdtCurrencies : [...WITHDRAW_CURRENCIES],
+    currencies:
+      payoutCurrencies.length > 0 ? payoutCurrencies : [...WITHDRAW_CURRENCIES],
   };
 }

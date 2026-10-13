@@ -15,7 +15,10 @@ import {
 } from "@/lib/deposit-packs";
 import { getWalletMinAmountCents } from "@/lib/wallet-config";
 import { SITE_CTA } from "@/lib/site-copy";
-import { DEPOSIT_PAYMENT_OPTIONS } from "@/lib/payment-methods";
+import {
+  DEPOSIT_BANKS,
+  DEPOSIT_PAYMENT_OPTIONS,
+} from "@/lib/payment-methods";
 import { useDepositDestinations } from "@/hooks/use-deposit-destinations";
 import type {
   DepositMethod,
@@ -48,6 +51,14 @@ const emptyCard: CardPaymentDetails = {
   cvc: "",
 };
 
+function makeBankReference(username: string) {
+  const base =
+    username.replace(/[^a-zA-Z0-9]/g, "").slice(0, 12).toUpperCase() ||
+    "PLAYER";
+  const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `${base}${suffix}`;
+}
+
 interface DepositFlowProps {
   onSuccess?: (transaction: DepositRecord) => void;
 }
@@ -76,12 +87,18 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
   const { user, refreshBalance } = useAuth();
   const { destinations } = useDepositDestinations();
   const [customAmount, setCustomAmount] = useState("");
-  const [method, setMethod] = useState<DepositMethod>("crypto");
+  const [method, setMethod] = useState<DepositMethod>("bank");
   const [card, setCard] = useState<CardPaymentDetails>(emptyCard);
   const [paypal, setPaypal] = useState<PayPalPaymentDetails>({ email: "" });
   const [crypto, setCrypto] = useState<CryptoPaymentDetails>({
     currency: "USDT",
   });
+  const [senderBankId, setSenderBankId] = useState<
+    (typeof DEPOSIT_BANKS)[number]["id"]
+  >("khan");
+  const [senderName, setSenderName] = useState("");
+  const [senderAccount, setSenderAccount] = useState("");
+  const [bankReference, setBankReference] = useState("");
   const [pastedTxHash, setPastedTxHash] = useState("");
   const [processing, setProcessing] = useState(false);
   const [status, setStatus] = useState("");
@@ -125,6 +142,12 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
     }
   }, [crypto.currency, cryptoNetworks]);
 
+  useEffect(() => {
+    if (user && !bankReference) {
+      setBankReference(makeBankReference(user.username || user.displayName));
+    }
+  }, [user, bankReference]);
+
   if (!user) return null;
 
   const currency = user.currency || DEFAULT_CURRENCY;
@@ -138,9 +161,16 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
     cryptoNetworks[0];
   const cryptoAddress = selectedNetwork?.address ?? "";
   const pastedHash = normalizeBep20TxHash(pastedTxHash);
-  const bankAccount = [destinations.bank.accountNumber, destinations.bank.accountHolder]
-    .filter(Boolean)
-    .join(" - ");
+  const senderBank =
+    DEPOSIT_BANKS.find((bank) => bank.id === senderBankId) ?? DEPOSIT_BANKS[0];
+  const resolvedSenderName = senderName || user.displayName || user.username;
+  const senderAccountDigits = senderAccount.replace(/\s+/g, "");
+  const bankReady = Boolean(
+    destinations.bank.accountNumber &&
+      resolvedSenderName.trim() &&
+      senderAccountDigits.length >= 6 &&
+      bankReference
+  );
 
   async function handleConfirm() {
     if (!user) return;
@@ -159,6 +189,18 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
     }
     if (method === "bank" && !destinations.bank.accountNumber) {
       setError("Bank deposit details are not configured yet.");
+      return;
+    }
+    if (method === "bank" && !resolvedSenderName.trim()) {
+      setError("Enter the name on the account you transferred from.");
+      return;
+    }
+    if (method === "bank" && senderAccountDigits.length < 6) {
+      setError("Enter the account number you transferred from.");
+      return;
+    }
+    if (method === "bank" && !bankReference) {
+      setError("Transfer description is missing. Refresh and try again.");
       return;
     }
     if (method === "crypto" && !cryptoAddress) {
@@ -211,6 +253,16 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
           method === "crypto"
             ? { ...crypto, txHash: txHash || undefined }
             : undefined,
+        bank:
+          method === "bank"
+            ? {
+                bankId: senderBank.id,
+                bankName: senderBank.label,
+                accountName: resolvedSenderName.trim(),
+                accountNumber: senderAccountDigits,
+                reference: bankReference,
+              }
+            : undefined,
       });
       await refreshBalance();
       setLastTx(result.transaction);
@@ -232,6 +284,10 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
     setLastTx(null);
     setCustomAmount("");
     setPastedTxHash("");
+    setSenderAccount("");
+    setBankReference(
+      makeBankReference(user?.username || user?.displayName || "PLAYER")
+    );
   }
 
   if (lastTx) {
@@ -301,8 +357,29 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
       {method === "bank" ? (
         <>
           <InstructionBlock lines={destinations.bank.instructions} />
-          {bankAccount ? (
-            <WalletCopyField label="Bank Account" value={bankAccount} />
+          {destinations.bank.accountNumber ? (
+            <>
+              <WalletCopyField
+                label="Bank"
+                value={destinations.bank.bankName || "Khan Bank"}
+              />
+              <WalletCopyField
+                label="Account number"
+                value={destinations.bank.accountNumber}
+              />
+              {destinations.bank.accountHolder ? (
+                <WalletCopyField
+                  label="Account holder"
+                  value={destinations.bank.accountHolder}
+                />
+              ) : null}
+              {bankReference ? (
+                <WalletCopyField
+                  label="Transfer description"
+                  value={bankReference}
+                />
+              ) : null}
+            </>
           ) : (
             <MissingDestination message="Bank deposit details are not configured yet." />
           )}
@@ -387,12 +464,40 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
         />
       ) : null}
 
-      {method === "bank" ? (
-        <p className="flex items-start gap-1.5 px-1 text-[11px] leading-relaxed text-zinc-500">
-          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          Confirm after you send the transfer. Your balance is credited after
-          the payment is approved in wp-admin.
-        </p>
+      {method === "bank" && destinations.bank.accountNumber ? (
+        <>
+          <WalletSelect
+            label="Your bank"
+            value={senderBankId}
+            onChange={setSenderBankId}
+            options={DEPOSIT_BANKS.map((bank) => ({
+              id: bank.id,
+              label: bank.label,
+            }))}
+          />
+          <WalletInlineInput
+            id="sender-name"
+            label="Your account name"
+            value={resolvedSenderName}
+            onChange={setSenderName}
+          />
+          <WalletInlineInput
+            id="sender-account"
+            label="Your account number"
+            value={senderAccount}
+            onChange={(value) => {
+              setSenderAccount(value);
+              setError("");
+            }}
+            placeholder="Account you sent from"
+          />
+          <p className="flex items-start gap-1.5 px-1 text-[11px] leading-relaxed text-zinc-500">
+            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            Send the amount from your bank app to the account above. Put the
+            transfer description in the payment note. Your balance is credited
+            after the transfer is approved in wp-admin.
+          </p>
+        </>
       ) : null}
 
       {status ? (
@@ -409,7 +514,11 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
       <WalletActionButton
         onClick={() => void handleConfirm()}
         isLoading={processing}
-        disabled={!amountValid || (method === "crypto" && !pastedHash)}
+        disabled={
+          !amountValid ||
+          (method === "crypto" && !pastedHash) ||
+          (method === "bank" && !bankReady)
+        }
       >
         {method === "card"
           ? "Submit deposit"

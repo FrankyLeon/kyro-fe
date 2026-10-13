@@ -34,7 +34,7 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
   const { user, refreshBalance } = useAuth();
   const { destinations } = useWithdrawDestinations();
   const [amountInput, setAmountInput] = useState("0");
-  const [method, setMethod] = useState<WithdrawMethod>("crypto");
+  const [method, setMethod] = useState<WithdrawMethod>("bank");
   const [payoutCurrency, setPayoutCurrency] = useState("USDT");
   const [accountName, setAccountName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
@@ -78,6 +78,21 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
       setPayoutCurrency(currencies[0] ?? "USDT");
     }
   }, [currencies, payoutCurrency]);
+
+  useEffect(() => {
+    if (method === "crypto") {
+      if (currencies.includes("USDT") && payoutCurrency !== "USDT") {
+        setPayoutCurrency("USDT");
+      }
+      return;
+    }
+    if (method === "bank" && payoutCurrency === "USDT") {
+      const fiat = currencies.includes("USD")
+        ? "USD"
+        : currencies.find((code) => code !== "USDT");
+      if (fiat) setPayoutCurrency(fiat);
+    }
+  }, [method, currencies, payoutCurrency]);
 
   useEffect(() => {
     if (banks.length > 0 && !banks.some((bank) => bank.id === bankId)) {

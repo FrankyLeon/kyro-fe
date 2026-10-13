@@ -32,6 +32,21 @@ export async function POST(request: Request) {
       );
     }
 
+    if (body.method === "bank") {
+      const accountName = body.bank?.accountName?.trim() ?? "";
+      const accountNumber = body.bank?.accountNumber?.replace(/\s+/g, "") ?? "";
+      const reference = body.bank?.reference?.trim() ?? "";
+      if (!accountName || accountNumber.length < 6 || reference.length < 4) {
+        return NextResponse.json(
+          {
+            message:
+              "Enter the bank account you sent from and keep the transfer description.",
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     const result = await createDeposit(token, body);
     return NextResponse.json(result);
   } catch (error) {

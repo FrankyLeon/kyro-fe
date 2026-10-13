@@ -41,6 +41,14 @@ export interface CryptoPaymentDetails {
   txHash?: string;
 }
 
+export interface BankPaymentDetails {
+  bankId: string;
+  bankName: string;
+  accountName: string;
+  accountNumber: string;
+  reference: string;
+}
+
 export interface CreateDepositInput {
   userId: string;
   amountCents: number;
@@ -51,6 +59,7 @@ export interface CreateDepositInput {
   card?: CardPaymentDetails;
   paypal?: PayPalPaymentDetails;
   crypto?: CryptoPaymentDetails;
+  bank?: BankPaymentDetails;
 }
 
 import type { User } from "@/types";
