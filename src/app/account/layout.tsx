@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
+import { getI18n } from "@/i18n/get-i18n";
 
-export const metadata: Metadata = {
-  title: "Account",
-  description: "View your Kyro profile, wallet balance, and account settings.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return {
+    title: t("meta.account"),
+    description: t("meta.accountDescription"),
+  };
+}
 
 export default function AccountLayout({
   children,

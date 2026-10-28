@@ -10,6 +10,7 @@ import {
 import { useRouter } from "next/navigation";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useAuth } from "@/context/auth-context";
+import { useI18n } from "@/context/locale-context";
 
 interface LogoutConfirmContextValue {
   requestLogout: () => void;
@@ -19,6 +20,7 @@ const LogoutConfirmContext =
   createContext<LogoutConfirmContextValue | null>(null);
 
 export function LogoutConfirmProvider({ children }: { children: ReactNode }) {
+  const { t } = useI18n();
   const { logout } = useAuth();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -43,10 +45,10 @@ export function LogoutConfirmProvider({ children }: { children: ReactNode }) {
       {children}
       <ConfirmDialog
         open={open}
-        title="Sign out?"
-        description="You'll need to sign in again to access your wallet, launch games, and view your account."
-        confirmLabel="Sign out"
-        cancelLabel="Stay signed in"
+        title={t("auth.signOutTitle")}
+        description={t("auth.signOutBody")}
+        confirmLabel={t("auth.signOut")}
+        cancelLabel={t("auth.staySignedIn")}
         onConfirm={handleConfirm}
         onCancel={handleCancel}
       />

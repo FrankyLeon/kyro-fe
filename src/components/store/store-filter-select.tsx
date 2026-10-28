@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/context/locale-context";
 
 export interface StoreFilterOption {
   value: string;
@@ -24,6 +25,7 @@ export function StoreFilterSelect({
   onChange,
   className,
 }: StoreFilterSelectProps) {
+  const { t } = useI18n();
   const listboxId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -68,7 +70,7 @@ export function StoreFilterSelect({
             {label}
           </span>
           <span className="mt-1 block truncate text-sm font-medium text-white">
-            {selected?.label ?? "All"}
+            {selected?.label ?? t("store.all")}
           </span>
         </span>
         <ChevronDown

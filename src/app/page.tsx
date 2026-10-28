@@ -5,19 +5,22 @@ import { ArrowRight, Play, Sparkles, Wallet, Zap } from "lucide-react";
 import { fetchGameCatalog } from "@/lib/api/server/games";
 import { HOME_POPULAR_SIZE } from "@/lib/pagination";
 import { resolveGameImage } from "@/lib/game-image";
-import { SITE_CTA } from "@/lib/site-copy";
 import { HomeHeroActions } from "@/components/home/home-hero-actions";
 import { PopularGames } from "@/components/home/popular-games";
 import { HeroStats } from "@/components/home/hero-stats";
 import { SectionHeading } from "@/components/ui/section-heading";
+import { getI18n } from "@/i18n/get-i18n";
 
-export const metadata: Metadata = {
-  title: "Home",
-  description:
-    "Fund your wallet, browse premium games, and bet instantly on Kyro.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return {
+    title: t("meta.homeTitle"),
+    description: t("meta.homeDescription"),
+  };
+}
 
 export default async function HomePage() {
+  const { t } = await getI18n();
   const catalog = await fetchGameCatalog({
     sort: "az",
     offset: 0,
@@ -53,15 +56,14 @@ export default async function HomePage() {
           <div className="max-w-2xl hero-stagger">
             <p className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-amber-300 mb-6 backdrop-blur-sm">
               <Sparkles className="h-3.5 w-3.5" />
-              Kyro — online betting
+              {t("home.badge")}
             </p>
             <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-[1.08]">
-              Real stakes. Real action.{" "}
-              <span className="text-gradient-gold">Built for winners.</span>
+              {t("home.heroLead")}{" "}
+              <span className="text-gradient-gold">{t("home.heroAccent")}</span>
             </h1>
             <p className="mt-6 text-lg text-zinc-300/90 leading-relaxed max-w-xl">
-              Fund your wallet, browse games from top providers, and chase your
-              next big win — instantly in your browser.
+              {t("home.heroBody")}
             </p>
             <HomeHeroActions />
             <HeroStats />
@@ -71,18 +73,18 @@ export default async function HomePage() {
             {[
               {
                 icon: Zap,
-                title: "Instant play",
-                text: "Start betting in seconds — no install required",
+                title: t("home.featureInstantTitle"),
+                text: t("home.featureInstantText"),
               },
               {
                 icon: Wallet,
-                title: "Secure wallet",
-                text: "Deposit funds and manage your balance in one place",
+                title: t("home.featureWalletTitle"),
+                text: t("home.featureWalletText"),
               },
               {
                 icon: Play,
-                title: "Instant launch",
-                text: "Jump into any game with a single click",
+                title: t("home.featureLaunchTitle"),
+                text: t("home.featureLaunchText"),
               },
             ].map((item, i) => (
               <div
@@ -127,7 +129,7 @@ export default async function HomePage() {
               <div className="absolute inset-0 flex flex-col justify-center p-8 sm:p-12 max-w-xl">
                 <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/15 px-3 py-1 text-xs font-bold uppercase tracking-wider text-amber-300 mb-3">
                   <Sparkles className="h-3 w-3" />
-                  Featured game
+                  {t("home.featured")}
                 </span>
                 <h2 className="font-display text-2xl sm:text-4xl font-bold text-white">
                   {featured[0].title}
@@ -136,7 +138,7 @@ export default async function HomePage() {
                   {featured[0].shortDescription}
                 </p>
                 <span className="mt-5 inline-flex items-center gap-2 rounded-full bg-amber-500/20 px-4 py-2 text-amber-300 font-semibold text-sm group-hover:bg-amber-500/30 group-hover:gap-3 transition-all w-fit">
-                  Play now <ArrowRight className="h-4 w-4" />
+                  {t("cta.playNow")} <ArrowRight className="h-4 w-4" />
                 </span>
               </div>
             </div>
@@ -146,15 +148,15 @@ export default async function HomePage() {
 
       <section className="mx-auto max-w-7xl px-4 pb-24 sm:px-6 lg:px-8">
         <SectionHeading
-          eyebrow="Hot picks"
-          title="Popular games"
-          description="Top titles from our providers — your next win could be one click away."
+          eyebrow={t("home.hotPicks")}
+          title={t("home.popular")}
+          description={t("home.popularBody")}
           action={
             <Link
               href="/store"
               className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-400 transition-all hover:bg-amber-500/20 hover:text-amber-300"
             >
-              {SITE_CTA.viewAllGames}
+              {t("cta.viewAllGames")}
               <ArrowRight className="h-4 w-4" />
             </Link>
           }

@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/auth-context";
+import { useI18n } from "@/context/locale-context";
 import { GuestAuthPrompt } from "@/components/auth/guest-auth-prompt";
 import { WalletMenu, type WalletMenuTab } from "@/components/wallet/wallet-menu";
 import { TransactionHistory } from "@/components/wallet/transaction-history";
 
 export default function WalletPage() {
+  const { t } = useI18n();
   const { user, isLoading, refreshBalance } = useAuth();
   const [tab, setTab] = useState<WalletMenuTab>("deposit");
   const [historyKey, setHistoryKey] = useState(0);
@@ -29,8 +31,8 @@ export default function WalletPage() {
     return (
       <GuestAuthPrompt
         redirect="/wallet"
-        title="Wallet"
-        description="Sign in to manage your balance, deposits, and withdrawals."
+        title={t("wallet.title")}
+        description={t("wallet.guestBody")}
       />
     );
   }
@@ -52,7 +54,7 @@ export default function WalletPage() {
 
       <section>
         <h2 className="mb-4 text-lg font-semibold text-zinc-200">
-          Recent transactions
+          {t("wallet.recent")}
         </h2>
         <TransactionHistory refreshKey={historyKey} />
       </section>

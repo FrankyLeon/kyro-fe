@@ -4,10 +4,12 @@ import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
+import { useI18n } from "@/context/locale-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 function LoginForm() {
+  const { t } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") ?? "/";
@@ -25,7 +27,7 @@ function LoginForm() {
       await login(email, password);
       router.push(redirect);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      setError(err instanceof Error ? err.message : t("auth.loginFailed"));
     } finally {
       setLoading(false);
     }
@@ -34,15 +36,15 @@ function LoginForm() {
   return (
     <div className="mx-auto max-w-md px-4 py-16 sm:py-24">
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-8 shadow-xl">
-        <h1 className="text-2xl font-bold text-white text-center">Welcome back</h1>
+        <h1 className="text-2xl font-bold text-white text-center">{t("auth.welcomeBack")}</h1>
         <p className="text-zinc-500 text-center text-sm mt-2 mb-8">
-          Sign in with your Kyro account to access your wallet and games
+          {t("auth.signInBody")}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
             id="email"
-            label="Email or username"
+            label={t("auth.emailOrUsername")}
             type="text"
             autoComplete="username"
             value={email}
@@ -51,7 +53,7 @@ function LoginForm() {
           />
           <Input
             id="password"
-            label="Password"
+            label={t("auth.password")}
             type="password"
             autoComplete="current-password"
             value={password}
@@ -60,14 +62,14 @@ function LoginForm() {
           />
           {error ? <p className="text-sm text-red-400">{error}</p> : null}
           <Button type="submit" className="w-full" size="lg" isLoading={loading}>
-            Sign in
+            {t("auth.signIn")}
           </Button>
         </form>
 
         <p className="text-center text-sm text-zinc-500 mt-6">
-          No account?{" "}
+          {t("auth.noAccount")}{" "}
           <Link href="/register" className="text-amber-400 hover:underline">
-            Create one
+            {t("auth.createOne")}
           </Link>
         </p>
       </div>

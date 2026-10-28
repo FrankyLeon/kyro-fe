@@ -1,6 +1,7 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
+import { useI18n } from "@/context/locale-context";
 import type { CardPaymentDetails } from "@/types/deposit";
 
 interface PaymentCardFormProps {
@@ -9,6 +10,7 @@ interface PaymentCardFormProps {
 }
 
 export function PaymentCardForm({ value, onChange }: PaymentCardFormProps) {
+  const { t } = useI18n();
   function formatCardNumber(raw: string) {
     const digits = raw.replace(/\D/g, "").slice(0, 16);
     return digits.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
@@ -24,8 +26,8 @@ export function PaymentCardForm({ value, onChange }: PaymentCardFormProps) {
     <div className="space-y-4">
       <Input
         id="cardholder"
-        label="Cardholder name"
-        placeholder="As shown on card"
+        label={t("wallet.cardholder")}
+        placeholder={t("wallet.cardholderPlaceholder")}
         value={value.cardholderName}
         onChange={(e) =>
           onChange({ ...value, cardholderName: e.target.value })
@@ -34,7 +36,7 @@ export function PaymentCardForm({ value, onChange }: PaymentCardFormProps) {
       />
       <Input
         id="cardnumber"
-        label="Card number"
+        label={t("wallet.cardNumber")}
         placeholder="4242 4242 4242 4242"
         value={value.cardNumber}
         onChange={(e) =>
@@ -45,7 +47,7 @@ export function PaymentCardForm({ value, onChange }: PaymentCardFormProps) {
       <div className="grid grid-cols-2 gap-4">
         <Input
           id="expiry"
-          label="Expiry"
+          label={t("wallet.expiry")}
           placeholder="MM/YY"
           value={value.expiry}
           onChange={(e) =>
@@ -70,7 +72,7 @@ export function PaymentCardForm({ value, onChange }: PaymentCardFormProps) {
         />
       </div>
       <p className="text-xs text-zinc-600">
-        Your payment details are encrypted and processed securely.
+        {t("wallet.cardSecure")}
       </p>
     </div>
   );

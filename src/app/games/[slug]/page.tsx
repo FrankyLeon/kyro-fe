@@ -5,12 +5,14 @@ import { fetchGameBySlug } from "@/lib/api/server/games";
 import { resolveGameImage } from "@/lib/game-image";
 import { Badge } from "@/components/ui/badge";
 import { GameDetailActions } from "./game-detail-actions";
+import { getI18n } from "@/i18n/get-i18n";
 
 interface GamePageProps {
   params: Promise<{ slug: string }>;
 }
 
 export default async function GameDetailPage({ params }: GamePageProps) {
+  const { t, intl } = await getI18n();
   const { slug } = await params;
   const game = await fetchGameBySlug(slug);
   if (!game) notFound();
@@ -56,7 +58,10 @@ export default async function GameDetailPage({ params }: GamePageProps) {
             <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-zinc-500">
               <span className="flex items-center gap-1">
                 <Users className="h-4 w-4" />
-                {game.minPlayers}–{game.maxPlayers} players
+                {t("games.players", {
+                  min: game.minPlayers,
+                  max: game.maxPlayers,
+                })}
               </span>
               <span className="flex items-center gap-1">
                 <Building2 className="h-4 w-4" />
@@ -64,7 +69,7 @@ export default async function GameDetailPage({ params }: GamePageProps) {
               </span>
               <span className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
-                {new Date(game.releaseDate).toLocaleDateString()}
+                {new Date(game.releaseDate).toLocaleDateString(intl)}
               </span>
             </div>
 
@@ -72,11 +77,11 @@ export default async function GameDetailPage({ params }: GamePageProps) {
 
             <div className="mt-10 prose prose-invert max-w-none">
               <h2 className="text-lg font-semibold text-zinc-200 mb-2">
-                About this game
+                {t("games.about")}
               </h2>
               <p className="text-zinc-400 leading-relaxed">{game.description}</p>
               <p className="text-sm text-zinc-500 mt-4">
-                Provider: {game.developer} · Instant browser play
+                {t("games.providerLine", { name: game.developer })}
               </p>
             </div>
 

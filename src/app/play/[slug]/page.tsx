@@ -11,12 +11,14 @@ import { fetchGameBySlug } from "@/lib/api/server/games";
 import { GameLauncher } from "@/components/play/game-launcher";
 import { resolveGameImage } from "@/lib/game-image";
 import { PlayGate } from "./play-gate";
+import { getI18n } from "@/i18n/get-i18n";
 
 interface PlayPageProps {
   params: Promise<{ slug: string }>;
 }
 
 export default async function PlayPage({ params }: PlayPageProps) {
+  const { t } = await getI18n();
   const { slug } = await params;
   const game = await fetchGameBySlug(slug);
   if (!game) notFound();
@@ -43,7 +45,7 @@ export default async function PlayPage({ params }: PlayPageProps) {
               className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-zinc-950/50 px-3.5 py-1.5 text-sm text-zinc-300 backdrop-blur-md transition-all hover:border-amber-500/40 hover:bg-zinc-950/70 hover:text-amber-400"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              Back to games
+              {t("games.backToGames")}
             </Link>
           </div>
         </div>
@@ -74,7 +76,10 @@ export default async function PlayPage({ params }: PlayPageProps) {
             <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-sm text-zinc-500 sm:justify-start">
               <span className="flex items-center gap-1">
                 <Users className="h-3.5 w-3.5" />
-                {game.minPlayers}–{game.maxPlayers} players
+                {t("games.players", {
+                  min: game.minPlayers,
+                  max: game.maxPlayers,
+                })}
               </span>
               <span className="flex items-center gap-1">
                 <Building2 className="h-3.5 w-3.5" />
@@ -88,7 +93,7 @@ export default async function PlayPage({ params }: PlayPageProps) {
             className="mx-auto inline-flex shrink-0 items-center gap-1.5 rounded-full border border-zinc-700/60 bg-zinc-900/60 px-4 py-2 text-sm text-zinc-400 backdrop-blur-sm transition-all hover:border-zinc-600 hover:text-zinc-200 sm:mx-0 sm:mb-1"
           >
             <ExternalLink className="h-3.5 w-3.5" />
-            Game details
+            {t("games.gameDetails")}
           </Link>
         </div>
 

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import type { FaqItem } from "@/types/support";
+import { useI18n } from "@/context/locale-context";
 import { cn } from "@/lib/utils";
 
 interface FaqListProps {
@@ -11,6 +12,7 @@ interface FaqListProps {
 }
 
 export function FaqList({ items, search = "" }: FaqListProps) {
+  const { t } = useI18n();
   const [openId, setOpenId] = useState<string | null>(items[0]?.id ?? null);
   const q = search.trim().toLowerCase();
 
@@ -25,7 +27,7 @@ export function FaqList({ items, search = "" }: FaqListProps) {
   if (filtered.length === 0) {
     return (
       <p className="text-sm text-zinc-500 py-8 text-center">
-        No articles match your search.
+        {t("support.noArticles")}
       </p>
     );
   }

@@ -18,8 +18,8 @@ import { DepositFlow } from "@/components/deposit/deposit-flow";
 import type { DepositRecord } from "@/types/deposit";
 import { kickGame, launchGame } from "@/lib/api/games";
 import { useAuth } from "@/context/auth-context";
+import { useI18n } from "@/context/locale-context";
 import { resolveGameImage } from "@/lib/game-image";
-import { SITE_CTA } from "@/lib/site-copy";
 import { getMinBalanceToPlayCents } from "@/lib/wallet-config";
 import { cn, formatBalance } from "@/lib/utils";
 
@@ -44,6 +44,7 @@ async function safeExitFullscreen(element: HTMLElement | null) {
 }
 
 function GameSession({ game, gameUrl, onExit }: GameSessionProps) {
+  const { t } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -117,8 +118,8 @@ function GameSession({ game, gameUrl, onExit }: GameSessionProps) {
             type="button"
             onClick={() => void toggleFullscreen()}
             className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-700/60 px-3 py-1.5 text-xs font-medium text-zinc-400 transition-colors hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-300"
-            aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-            title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+            aria-label={isFullscreen ? t("play.exitFullscreen") : t("play.enterFullscreen")}
+            title={isFullscreen ? t("play.exitFullscreen") : t("play.fullscreen")}
           >
             {isFullscreen ? (
               <Minimize className="h-3.5 w-3.5" />
@@ -126,7 +127,7 @@ function GameSession({ game, gameUrl, onExit }: GameSessionProps) {
               <Maximize className="h-3.5 w-3.5" />
             )}
             <span className="hidden sm:inline">
-              {isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+              {isFullscreen ? t("play.exitFullscreen") : t("play.fullscreen")}
             </span>
           </button>
           <button
@@ -135,7 +136,7 @@ function GameSession({ game, gameUrl, onExit }: GameSessionProps) {
             className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-700/60 px-3 py-1.5 text-xs font-medium text-zinc-400 transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-300"
           >
             <LogOut className="h-3.5 w-3.5" />
-            Exit
+            {t("play.exit")}
           </button>
         </div>
       </div>
@@ -168,10 +169,10 @@ function GameSession({ game, gameUrl, onExit }: GameSessionProps) {
               {game.title}
             </p>
             <p className="max-w-md text-center text-sm text-zinc-200/90">
-              Connecting to game server…
+              {t("play.connecting")}
             </p>
             <div className="flex flex-wrap justify-center gap-2">
-              <Badge variant="gold">Session active</Badge>
+              <Badge variant="gold">{t("play.sessionActive")}</Badge>
             </div>
           </div>
         )}
@@ -181,6 +182,7 @@ function GameSession({ game, gameUrl, onExit }: GameSessionProps) {
 }
 
 export function GameLauncher({ game }: GameLauncherProps) {
+  const { t, intl } = useI18n();
   const { user, refreshBalance } = useAuth();
   const [launching, setLaunching] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -207,7 +209,7 @@ export function GameLauncher({ game }: GameLauncherProps) {
       await refreshBalance();
     } catch (err) {
       setLaunchError(
-        err instanceof Error ? err.message : "Could not start the game."
+        err instanceof Error ? err.message : t("play.startFailed")
       );
     } finally {
       setLaunching(false);
@@ -218,7 +220,7 @@ export function GameLauncher({ game }: GameLauncherProps) {
     setLaunchError(null);
 
     if (!user) {
-      setLaunchError("Sign in to launch a game.");
+      setLaunchError(t("play.signInToLaunch"));
       return;
     }
 
@@ -279,22 +281,23 @@ export function GameLauncher({ game }: GameLauncherProps) {
               <div className="mb-2 flex items-center gap-2 text-amber-400">
                 <Wallet className="h-5 w-5" />
                 <span className="text-sm font-medium uppercase tracking-wider">
-                  Deposit required
+                  {t("play.depositRequired")}
                 </span>
               </div>
               <h3 className="text-xl font-semibold text-zinc-100">
-                Add funds to play
+                {t("play.addFunds")}
               </h3>
               <p className="mt-2 max-w-md text-sm leading-relaxed text-zinc-500">
-                You need at least{" "}
-                {formatBalance(minBalanceCents, user?.currency || "USD")} to
-                start {game.title}. Complete a deposit to continue.
+                {t("play.needFunds", {
+                  amount: formatBalance(minBalanceCents, user?.currency || "USD", intl),
+                  title: game.title,
+                })}
               </p>
               {user ? (
                 <p className="mt-3 text-sm text-zinc-500">
-                  Current balance:{" "}
+                  {t("play.currentBalance")}{" "}
                   <span className="font-medium text-amber-400">
-                    {formatBalance(user.balanceCents, user.currency)}
+                    {formatBalance(user.balanceCents, user.currency, intl)}
                   </span>
                 </p>
               ) : null}
@@ -306,7 +309,7 @@ export function GameLauncher({ game }: GameLauncherProps) {
                 setShowDeposit(false);
               }}
               className="rounded-lg border border-zinc-700/60 p-2 text-zinc-400 transition-colors hover:border-zinc-500 hover:text-zinc-200"
-              aria-label="Close deposit"
+              aria-label={t("play.closeDeposit")}
             >
               <X className="h-4 w-4" />
             </button>
@@ -357,13 +360,13 @@ export function GameLauncher({ game }: GameLauncherProps) {
 
           <div className="mb-2 flex items-center justify-center gap-1.5 text-xs font-medium uppercase tracking-wider">
             <Sparkles className="h-3.5 w-3.5 text-amber-500/80" />
-            <span className="text-shimmer">Ready to play</span>
+            <span className="text-shimmer">{t("play.ready")}</span>
           </div>
           <h3 className="mb-2 text-xl font-semibold text-zinc-100">
-            Instant play
+            {t("play.instantPlay")}
           </h3>
           <p className="mx-auto mb-4 max-w-sm text-sm leading-relaxed text-zinc-500">
-            No download required. Your session runs securely in the browser.
+            {t("play.noDownload")}
           </p>
 
           <div className="mb-8 flex items-center justify-center gap-3 text-xs text-zinc-500">
@@ -374,13 +377,10 @@ export function GameLauncher({ game }: GameLauncherProps) {
 
           {lowBalance && user ? (
             <p className="mx-auto mb-5 max-w-md rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-sm text-amber-300/90">
-              Balance{" "}
-              <span className="font-medium text-amber-400">
-                {formatBalance(user.balanceCents, user.currency)}
-              </span>{" "}
-              is below the{" "}
-              {formatBalance(minBalanceCents, user.currency)} minimum. You&apos;ll
-              be asked to deposit before playing.
+              {t("play.balanceLow", {
+                amount: formatBalance(user.balanceCents, user.currency, intl),
+                min: formatBalance(minBalanceCents, user.currency, intl),
+              })}
             </p>
           ) : null}
 
@@ -406,7 +406,7 @@ export function GameLauncher({ game }: GameLauncherProps) {
                   <Play className="h-4 w-4 fill-current" />
                 </span>
               )}
-              <span>{lowBalance ? "Deposit & play" : SITE_CTA.playNow}</span>
+              <span>{lowBalance ? t("play.depositAndPlay") : t("cta.playNow")}</span>
             </Button>
           </div>
         </div>

@@ -19,8 +19,11 @@ import { CurrencyIcon } from "@/components/wallet/currency-icon";
 import { formatWalletNumber } from "@/lib/utils";
 import { SITE_BRAND } from "@/lib/site-copy";
 import { Button } from "@/components/ui/button";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { useI18n } from "@/context/locale-context";
 
 export function Header() {
+  const { t } = useI18n();
   const { user, isLoading } = useAuth();
   const logout = useLogout();
   const { openWallet } = useWalletMenu();
@@ -32,7 +35,7 @@ export function Header() {
         <button
           type="button"
           onClick={() => openWallet("deposit")}
-          title="Wallet balance"
+          title={t("header.walletBalance")}
           className="flex h-full items-center gap-2 px-3.5 text-sm text-zinc-100 transition-colors hover:bg-white/5"
         >
           <CurrencyIcon size="sm" />
@@ -47,7 +50,7 @@ export function Header() {
           className="flex h-full items-center gap-1.5 px-3.5 text-sm font-medium text-amber-400 transition-colors hover:bg-amber-500/10"
         >
           <Wallet className="h-3.5 w-3.5" />
-          Wallet
+          {t("header.wallet")}
         </button>
       </div>
     ) : null;
@@ -70,6 +73,7 @@ export function Header() {
         <div className="hidden justify-self-center sm:block">{walletControls}</div>
 
         <div className="flex items-center justify-end gap-1 justify-self-end">
+          <LanguageSwitcher className="mr-1" />
           {!isLoading && user ? (
             <div className="hidden sm:flex items-center">
               <Link
@@ -90,7 +94,7 @@ export function Header() {
                 type="button"
                 onClick={logout}
                 className="rounded-full p-2 text-zinc-500 transition-colors hover:bg-white/5 hover:text-zinc-200"
-                aria-label="Log out"
+                aria-label={t("header.logOut")}
               >
                 <LogOut className="h-4 w-4" />
               </button>
@@ -99,13 +103,13 @@ export function Header() {
             <div className="hidden sm:flex items-center gap-1">
               <Link href="/register">
                 <Button variant="ghost" size="sm">
-                  Register
+                  {t("header.register")}
                 </Button>
               </Link>
               <Link href="/login">
                 <Button variant="outline" size="sm">
                   <LogIn className="h-3.5 w-3.5" />
-                  Sign in
+                  {t("header.signIn")}
                 </Button>
               </Link>
             </div>
@@ -115,7 +119,7 @@ export function Header() {
             type="button"
             className="rounded-full p-2 text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-200 sm:hidden"
             onClick={() => setMobileOpen(!mobileOpen)}
-            aria-label="Menu"
+            aria-label={t("header.menu")}
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -140,7 +144,7 @@ export function Header() {
                 </span>
                 <span className="inline-flex items-center gap-1.5 text-sm font-medium text-amber-400">
                   <Wallet className="h-3.5 w-3.5" />
-                  Wallet
+                  {t("header.wallet")}
                 </span>
               </button>
               <Link
@@ -149,7 +153,7 @@ export function Header() {
                 className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-zinc-300 transition-colors hover:bg-white/5"
               >
                 <User className="h-4 w-4 text-zinc-500" />
-                Account
+                {t("header.account")}
               </Link>
               <button
                 type="button"
@@ -159,19 +163,19 @@ export function Header() {
                 }}
                 className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-200"
               >
-                Log out
+                {t("header.logOut")}
               </button>
             </>
           ) : !isLoading ? (
             <div className="flex flex-col gap-2">
               <Link href="/register" onClick={() => setMobileOpen(false)}>
                 <Button variant="secondary" className="w-full" size="sm">
-                  Register
+                  {t("header.register")}
                 </Button>
               </Link>
               <Link href="/login" onClick={() => setMobileOpen(false)}>
                 <Button className="w-full" size="sm">
-                  Sign in
+                  {t("header.signIn")}
                 </Button>
               </Link>
             </div>

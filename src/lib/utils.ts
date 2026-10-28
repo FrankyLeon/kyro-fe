@@ -12,10 +12,14 @@ export function formatPrice(cents: number, currency = "USD"): string {
   }).format(cents / 100);
 }
 
-export function formatBalance(cents: number, currency = "USD"): string {
+export function formatBalance(
+  cents: number,
+  currency = "USD",
+  locale = "en-US"
+): string {
   const normalized = currency.toUpperCase();
   try {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat(locale, {
       style: "currency",
       currency: normalized,
     }).format(cents / 100);
@@ -41,8 +45,8 @@ export function formatWalletNumber(cents: number): string {
   }).format(cents / 100);
 }
 
-export function formatDateTime(iso: string): string {
-  return new Intl.DateTimeFormat("en-US", {
+export function formatDateTime(iso: string, locale = "en-US"): string {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(iso));

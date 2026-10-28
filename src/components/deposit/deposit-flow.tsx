@@ -14,7 +14,12 @@ import {
   parseCustomDepositCents,
 } from "@/lib/deposit-packs";
 import { getWalletMinAmountCents } from "@/lib/wallet-config";
-import { SITE_CTA } from "@/lib/site-copy";
+import { useI18n } from "@/context/locale-context";
+import {
+  bankDisplayName,
+  paymentMethodLabel,
+  translateInstruction,
+} from "@/i18n/labels";
 import {
   DEPOSIT_BANKS,
   DEPOSIT_PAYMENT_OPTIONS,
@@ -84,6 +89,7 @@ function MissingDestination({ message }: { message: string }) {
 }
 
 export function DepositFlow({ onSuccess }: DepositFlowProps) {
+  const { t } = useI18n();
   const { user, refreshBalance } = useAuth();
   const { destinations } = useDepositDestinations();
   const [customAmount, setCustomAmount] = useState("");
@@ -187,54 +193,56 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
     setStatus("");
 
     if (amountCents <= 0) {
-      setError("Enter a valid deposit amount.");
+      setError(t("wallet.invalidDeposit"));
       return;
     }
     if (amountCents < minAmountCents) {
       setError(
-        `Minimum deposit is ${formatWalletAmount(minAmountCents, currency)}.`
+        t("wallet.minDeposit", {
+          amount: formatWalletAmount(minAmountCents, currency),
+        })
       );
       return;
     }
     if (activeMethod === "bank" && !destinations.bank.accountNumber) {
-      setError("Bank deposit details are not configured yet.");
+      setError(t("wallet.bankNotConfigured"));
       return;
     }
     if (activeMethod === "bank" && !resolvedSenderName.trim()) {
-      setError("Enter the name on the account you transferred from.");
+      setError(t("wallet.senderNameRequired"));
       return;
     }
     if (activeMethod === "bank" && senderAccountDigits.length < 6) {
-      setError("Enter the account number you transferred from.");
+      setError(t("wallet.senderAccountRequired"));
       return;
     }
     if (activeMethod === "bank" && !bankReference) {
-      setError("Transfer description is missing. Refresh and try again.");
+      setError(t("wallet.referenceMissing"));
       return;
     }
     if (activeMethod === "crypto" && !cryptoAddress) {
-      setError("Crypto deposit addresses are not configured yet.");
+      setError(t("wallet.cryptoNotConfigured"));
       return;
     }
     if (activeMethod === "crypto" && !pastedHash) {
-      setError("Paste the BNB Smart Chain transaction hash after you send USDT.");
+      setError(t("wallet.txHashRequired"));
       return;
     }
     if (activeMethod === "card") {
       const digits = card.cardNumber.replace(/\D/g, "");
       if (!card.cardholderName.trim() || digits.length < 13 || !card.expiry || card.cvc.length < 3) {
-        setError("Enter complete card details.");
+        setError(t("wallet.cardIncomplete"));
         return;
       }
     }
     if (activeMethod === "paypal") {
       const email = paypal.email.trim() || user.email;
       if (!email) {
-        setError("Enter your PayPal email.");
+        setError(t("wallet.paypalEmailRequired"));
         return;
       }
       if (!destinations.paypal.email) {
-        setError("PayPal receiving email is not configured yet.");
+        setError(t("wallet.paypalNotConfigured"));
         return;
       }
     }
@@ -244,7 +252,7 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
       const txHash = activeMethod === "crypto" ? pastedHash : "";
 
       if (activeMethod === "crypto") {
-        setStatus(`Verifying ${shortenTxHash(txHash)} …`);
+        setStatus(t("wallet.verifying", { hash: shortenTxHash(txHash) }));
       }
 
       const result = await createDeposit(user, {
@@ -285,7 +293,7 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
       setStatus("");
     } catch (e) {
       setStatus("");
-      setError(e instanceof Error ? e.message : "Deposit failed");
+      setError(e instanceof Error ? e.message : t("wallet.depositFailed"));
     } finally {
       setProcessing(false);
     }
@@ -309,19 +317,17 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
       <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-8 text-center">
         <CheckCircle2 className="mx-auto mb-4 h-14 w-14 text-emerald-400" />
         <h2 className="text-xl font-bold text-white">
-          {pending ? "Deposit submitted" : "Deposit complete"}
+          {pending ? t("wallet.depositSubmitted") : t("wallet.depositComplete")}
         </h2>
         <p className="mt-2 text-zinc-400">
           <span className="font-semibold text-white">
             +{formatWalletAmount(lastTx.amountCents, lastTx.currency)}
           </span>{" "}
-          {pending
-            ? "is waiting for payment confirmation. Your balance updates after approval."
-            : "added to your balance"}
+          {pending ? t("wallet.depositPending") : t("wallet.depositAdded")}
         </p>
         {lastTx.txHash ? (
           <p className="mt-4 text-sm text-zinc-500">
-            Tx:{" "}
+            {t("wallet.tx")}{" "}
             <a
               href={bep20ExplorerTxUrl(lastTx.txHash)}
               target="_blank"
@@ -333,16 +339,16 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
           </p>
         ) : lastTx.reference ? (
           <p className="mt-4 text-sm text-zinc-500">
-            Reference:{" "}
+            {t("wallet.reference")}{" "}
             <span className="font-mono text-zinc-400">{lastTx.reference}</span>
           </p>
         ) : null}
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Button onClick={resetFlow} variant="secondary">
-            Make another deposit
+            {t("wallet.anotherDeposit")}
           </Button>
           <a href="/store">
-            <Button>{SITE_CTA.playNow}</Button>
+            <Button>{t("cta.playNow")}</Button>
           </a>
         </div>
       </div>
@@ -356,45 +362,53 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
       />
 
       <WalletSelect
-        label="Payments Method"
+        label={t("wallet.paymentMethod")}
         value={activeMethod}
         onChange={setMethod}
         icon={<MethodGlyph kind={selectedMethod?.icon ?? "bank"} />}
         options={paymentOptions.map((option) => ({
           id: option.id,
-          label: option.label,
+          label: paymentMethodLabel(t, option.id, option.label),
           icon: <MethodGlyph kind={option.icon} />,
         }))}
       />
 
       {activeMethod === "bank" ? (
         <>
-          <InstructionBlock lines={destinations.bank.instructions} />
+          <InstructionBlock
+            lines={destinations.bank.instructions.map((line) =>
+              translateInstruction(t, line)
+            )}
+          />
           {destinations.bank.accountNumber ? (
             <>
               <WalletCopyField
-                label="Bank"
-                value={destinations.bank.bankName || "Khan Bank"}
+                label={t("wallet.bank")}
+                value={bankDisplayName(
+                  t,
+                  undefined,
+                  destinations.bank.bankName || "Khan Bank"
+                )}
               />
               <WalletCopyField
-                label="Account number"
+                label={t("wallet.accountNumber")}
                 value={destinations.bank.accountNumber}
               />
               {destinations.bank.accountHolder ? (
                 <WalletCopyField
-                  label="Account holder"
+                  label={t("wallet.accountHolder")}
                   value={destinations.bank.accountHolder}
                 />
               ) : null}
               {bankReference ? (
                 <WalletCopyField
-                  label="Transfer description"
+                  label={t("wallet.transferDescription")}
                   value={bankReference}
                 />
               ) : null}
             </>
           ) : (
-            <MissingDestination message="Bank deposit details are not configured yet." />
+            <MissingDestination message={t("wallet.bankNotConfigured")} />
           )}
         </>
       ) : null}
@@ -406,14 +420,14 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
               <div className="py-2">
                 <QrCodeImage value={cryptoAddress} />
               </div>
-              <WalletCopyField label="Crypto Address" value={cryptoAddress} />
+              <WalletCopyField label={t("wallet.cryptoAddress")} value={cryptoAddress} />
             </>
           ) : (
-            <MissingDestination message="Crypto deposit addresses are not configured yet." />
+            <MissingDestination message={t("wallet.cryptoNotConfigured")} />
           )}
           <WalletInlineInput
             id="crypto-txhash"
-            label="Transaction hash"
+            label={t("wallet.txHash")}
             value={pastedTxHash}
             onChange={(value) => {
               setPastedTxHash(value);
@@ -422,7 +436,7 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
             placeholder="0x…"
           />
           <WalletMetaRow
-            label="Min. Amount"
+            label={t("wallet.minAmount")}
             value={formatWalletNumber(minAmountCents)}
             icon={<CurrencyIcon size="sm" />}
           />
@@ -431,7 +445,11 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
 
       {activeMethod === "card" ? (
         <div className="space-y-3">
-          <InstructionBlock lines={destinations.card.instructions} />
+          <InstructionBlock
+            lines={destinations.card.instructions.map((line) =>
+              translateInstruction(t, line)
+            )}
+          />
           <div className="rounded-xl border border-white/8 bg-[#1c1e28] p-4">
             <PaymentCardForm value={card} onChange={setCard} />
           </div>
@@ -440,14 +458,18 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
 
       {activeMethod === "paypal" ? (
         <div className="space-y-3">
-          <InstructionBlock lines={destinations.paypal.instructions} />
+          <InstructionBlock
+            lines={destinations.paypal.instructions.map((line) =>
+              translateInstruction(t, line)
+            )}
+          />
           {destinations.paypal.email ? (
             <WalletCopyField
-              label="PayPal account"
+              label={t("wallet.paypalAccount")}
               value={destinations.paypal.email}
             />
           ) : (
-            <MissingDestination message="PayPal receiving email is not configured yet." />
+            <MissingDestination message={t("wallet.paypalNotConfigured")} />
           )}
           <div className="rounded-xl border border-white/8 bg-[#1c1e28] p-4">
             <PaymentPayPalForm
@@ -461,7 +483,7 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
 
       <WalletAmountInput
         id="deposit-amount"
-        label="Deposit amount"
+        label={t("wallet.depositAmount")}
         value={customAmount || "0"}
         onChange={(value) => {
           setCustomAmount(value === "0" ? "" : value);
@@ -471,7 +493,7 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
 
       {activeMethod !== "crypto" ? (
         <WalletMetaRow
-          label="Min. Amount"
+          label={t("wallet.minAmount")}
           value={formatWalletNumber(minAmountCents)}
           icon={<CurrencyIcon size="sm" />}
         />
@@ -480,35 +502,33 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
       {activeMethod === "bank" && destinations.bank.accountNumber ? (
         <>
           <WalletSelect
-            label="Your bank"
+            label={t("wallet.yourBank")}
             value={senderBankId}
             onChange={setSenderBankId}
             options={DEPOSIT_BANKS.map((bank) => ({
               id: bank.id,
-              label: bank.label,
+              label: bankDisplayName(t, bank.id, bank.label),
             }))}
           />
           <WalletInlineInput
             id="sender-name"
-            label="Your account name"
+            label={t("wallet.yourAccountName")}
             value={resolvedSenderName}
             onChange={setSenderName}
           />
           <WalletInlineInput
             id="sender-account"
-            label="Your account number"
+            label={t("wallet.yourAccountNumber")}
             value={senderAccount}
             onChange={(value) => {
               setSenderAccount(value);
               setError("");
             }}
-            placeholder="Account you sent from"
+            placeholder={t("wallet.accountYouSentFrom")}
           />
           <p className="flex items-start gap-1.5 px-1 text-[11px] leading-relaxed text-zinc-500">
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            Send the amount from your bank app to the account above. Put the
-            transfer description in the payment note. Your balance is credited
-            after the transfer is approved in wp-admin.
+            {t("wallet.bankNote")}
           </p>
         </>
       ) : null}
@@ -534,10 +554,10 @@ export function DepositFlow({ onSuccess }: DepositFlowProps) {
         }
       >
         {activeMethod === "card"
-          ? "Submit deposit"
+          ? t("wallet.submitDeposit")
           : activeMethod === "crypto"
-            ? "Credit deposit"
-            : "I sent the payment"}
+            ? t("wallet.creditDeposit")
+            : t("wallet.sentPayment")}
       </WalletActionButton>
     </div>
   );

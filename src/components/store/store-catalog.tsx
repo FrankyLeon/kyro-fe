@@ -16,6 +16,7 @@ import {
 } from "@/lib/game-search";
 import { parsePageParam } from "@/lib/pagination";
 import { buildStoreUrl } from "@/lib/store-url";
+import { useI18n } from "@/context/locale-context";
 
 interface StoreCatalogProps {
   initialGames: Game[];
@@ -61,6 +62,7 @@ export function StoreCatalog({
   initialSort = "az",
   initialPage,
 }: StoreCatalogProps) {
+  const { t } = useI18n();
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
   const [provider, setProvider] = useState(initialProvider);
@@ -165,7 +167,7 @@ export function StoreCatalog({
           games={items}
           emptyMessage={
             hasFilters
-              ? "No games matched your filters. Try another search or provider."
+              ? t("games.noFilterMatch")
               : undefined
           }
         />

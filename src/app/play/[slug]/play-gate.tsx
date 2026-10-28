@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Lock } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
-import { SITE_CTA } from "@/lib/site-copy";
+import { useI18n } from "@/context/locale-context";
 import { Button } from "@/components/ui/button";
 
 interface PlayGateProps {
@@ -12,6 +12,7 @@ interface PlayGateProps {
 }
 
 export function PlayGate({ gameSlug, children }: PlayGateProps) {
+  const { t } = useI18n();
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
@@ -19,7 +20,7 @@ export function PlayGate({ gameSlug, children }: PlayGateProps) {
       <div className="flex min-h-[420px] items-center justify-center rounded-2xl border border-zinc-800/80 bg-zinc-900/30 shadow-2xl shadow-black/20 ring-1 ring-white/5">
         <div className="flex flex-col items-center gap-4">
           <span className="h-10 w-10 animate-spin rounded-full border-2 border-amber-500/20 border-t-amber-400" />
-          <p className="text-sm text-zinc-500">Preparing your session…</p>
+          <p className="text-sm text-zinc-500">{t("play.preparing")}</p>
         </div>
       </div>
     );
@@ -36,19 +37,19 @@ export function PlayGate({ gameSlug, children }: PlayGateProps) {
           <Lock className="h-7 w-7 text-amber-400" />
         </div>
         <p className="relative text-xl font-semibold text-zinc-100">
-          {SITE_CTA.signInToPlay}
+          {t("cta.signInToPlay")}
         </p>
         <p className="relative mx-auto mt-2 max-w-xs text-sm leading-relaxed text-zinc-500">
-          Your account is required before starting a game session.
+          {t("play.accountRequired")}
         </p>
         <div className="relative mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Link href="/store">
             <Button variant="secondary" className="w-full sm:w-auto">
-              {SITE_CTA.browseGames}
+              {t("cta.browseGames")}
             </Button>
           </Link>
           <Link href={`/login?redirect=/play/${gameSlug}`}>
-            <Button className="w-full sm:w-auto">{SITE_CTA.signIn}</Button>
+            <Button className="w-full sm:w-auto">{t("cta.signIn")}</Button>
           </Link>
         </div>
       </div>

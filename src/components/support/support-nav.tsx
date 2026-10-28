@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/context/locale-context";
 import {
   HelpCircle,
   Mail,
@@ -11,32 +14,36 @@ import {
 const links = [
   {
     href: "/support",
-    label: "Help center",
+    labelKey: "support.helpCenter",
     icon: HelpCircle,
     exact: true,
   },
   {
     href: "/support/contact",
-    label: "Contact us",
+    labelKey: "support.contactUs",
     icon: Mail,
+    exact: false,
   },
   {
     href: "/support/refunds",
-    label: "Refund policy",
+    labelKey: "support.refundPolicy",
     icon: RefreshCw,
+    exact: false,
   },
   {
     href: "/support/responsible-gaming",
-    label: "Responsible gaming",
+    labelKey: "support.responsible",
     icon: Shield,
+    exact: false,
   },
-];
+] as const;
 
 interface SupportNavProps {
   currentPath: string;
 }
 
 export function SupportNav({ currentPath }: SupportNavProps) {
+  const { t } = useI18n();
   return (
     <nav className="space-y-1">
       {links.map((link) => {
@@ -56,7 +63,7 @@ export function SupportNav({ currentPath }: SupportNavProps) {
             )}
           >
             <link.icon className="h-4 w-4 shrink-0" />
-            {link.label}
+            {t(link.labelKey)}
             <ChevronRight
               className={cn(
                 "ml-auto h-4 w-4 opacity-0",
@@ -81,12 +88,13 @@ export function SupportLayoutShell({
   description?: string;
   children: React.ReactNode;
 }) {
+  const { t } = useI18n();
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="grid gap-10 lg:grid-cols-[220px_1fr]">
         <aside>
           <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3 px-3">
-            Support
+            {t("support.eyebrow")}
           </p>
           <SupportNav currentPath={currentPath} />
         </aside>

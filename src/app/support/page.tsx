@@ -5,38 +5,56 @@ import Link from "next/link";
 import { Search, Mail, Shield, RefreshCw } from "lucide-react";
 import { SupportLayoutShell } from "@/components/support/support-nav";
 import { FaqList } from "@/components/support/faq-list";
-import { SUPPORT_FAQ, SUPPORT_EMAIL } from "@/lib/support-content";
+import { SUPPORT_EMAIL } from "@/lib/support-content";
 import { Input } from "@/components/ui/input";
+import { useI18n } from "@/context/locale-context";
+import type { FaqItem } from "@/types/support";
 
-const quickLinks = [
-  {
-    href: "/support/contact",
-    icon: Mail,
-    title: "Contact support",
-    text: "Submit a request and our team will get back to you",
-  },
-  {
-    href: "/support/refunds",
-    icon: RefreshCw,
-    title: "Refund policy",
-    text: "Deposit eligibility and how to request a refund",
-  },
-  {
-    href: "/support/responsible-gaming",
-    icon: Shield,
-    title: "Responsible gaming",
-    text: "Limits, self-exclusion, and help resources",
-  },
-];
+const faqItems = [
+  { id: "faq-1", category: "general", q: "support.faq.playQ", a: "support.faq.playA" },
+  { id: "faq-2", category: "deposit", q: "support.faq.depositQ", a: "support.faq.depositA" },
+  { id: "faq-3", category: "deposit", q: "support.faq.methodsQ", a: "support.faq.methodsA" },
+  { id: "faq-4", category: "account", q: "support.faq.passwordQ", a: "support.faq.passwordA" },
+  { id: "faq-6", category: "games", q: "support.faq.downloadQ", a: "support.faq.downloadA" },
+  { id: "faq-7", category: "technical", q: "support.faq.loadQ", a: "support.faq.loadA" },
+  { id: "faq-8", category: "general", q: "support.faq.refundQ", a: "support.faq.refundA" },
+] as const;
 
 export default function SupportPage() {
+  const { t } = useI18n();
   const [search, setSearch] = useState("");
+  const quickLinks = [
+    {
+      href: "/support/contact",
+      icon: Mail,
+      title: t("support.contactSupport"),
+      text: t("support.contactSupportBody"),
+    },
+    {
+      href: "/support/refunds",
+      icon: RefreshCw,
+      title: t("support.refundPolicy"),
+      text: t("support.refundPolicyBody"),
+    },
+    {
+      href: "/support/responsible-gaming",
+      icon: Shield,
+      title: t("support.responsible"),
+      text: t("support.responsibleBody"),
+    },
+  ];
+  const faqs: FaqItem[] = faqItems.map((item) => ({
+    id: item.id,
+    category: item.category,
+    question: t(item.q),
+    answer: t(item.a),
+  }));
 
   return (
     <SupportLayoutShell
       currentPath="/support"
-      title="Help center"
-      description="Find answers about games, deposits, and your account."
+      title={t("support.helpCenter")}
+      description={t("support.helpBody")}
     >
       <div className="grid gap-4 sm:grid-cols-3 mb-10">
         {quickLinks.map((item) => (
@@ -58,7 +76,7 @@ export default function SupportPage() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
         <Input
           id="faq-search"
-          placeholder="Search help articles…"
+          placeholder={t("support.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-10"
@@ -66,18 +84,18 @@ export default function SupportPage() {
       </div>
 
       <h2 className="text-lg font-semibold text-zinc-200 mb-4">
-        Frequently asked questions
+        {t("support.faqTitle")}
       </h2>
-      <FaqList items={SUPPORT_FAQ} search={search} />
+      <FaqList items={faqs} search={search} />
 
       <p className="text-sm text-zinc-500 mt-8">
-        Still need help?{" "}
+        {t("support.stillNeed")}{" "}
         <a href={`mailto:${SUPPORT_EMAIL}`} className="text-amber-400 hover:underline">
           {SUPPORT_EMAIL}
         </a>{" "}
-        or{" "}
+        {t("support.or")}{" "}
         <Link href="/support/contact" className="text-amber-400 hover:underline">
-          contact support
+          {t("support.contactLink")}
         </Link>
         .
       </p>

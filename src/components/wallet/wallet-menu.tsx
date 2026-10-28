@@ -2,6 +2,7 @@
 
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/context/locale-context";
 import { DepositFlow } from "@/components/deposit/deposit-flow";
 import { WithdrawFlow } from "@/components/wallet/withdraw-flow";
 
@@ -22,6 +23,7 @@ export function WalletMenu({
   onSuccess,
   className,
 }: WalletMenuProps) {
+  const { t } = useI18n();
   function handleDepositSuccess() {
     onSuccess?.();
   }
@@ -39,14 +41,14 @@ export function WalletMenu({
     >
       <div className="flex items-center justify-between px-5 pt-5">
         <h2 id="wallet-menu-title" className="text-lg font-semibold text-white">
-          Wallet Menu
+          {t("wallet.menu")}
         </h2>
         {onClose ? (
           <button
             type="button"
             onClick={onClose}
             className="rounded-md p-1 text-zinc-400 transition-colors hover:bg-white/5 hover:text-white"
-            aria-label="Close wallet menu"
+            aria-label={t("wallet.closeMenu")}
           >
             <X className="h-5 w-5" />
           </button>
@@ -56,8 +58,8 @@ export function WalletMenu({
       <div className="mt-4 flex gap-2 px-5">
         {(
           [
-            { id: "deposit" as const, label: "Deposit" },
-            { id: "withdraw" as const, label: "Withdraw" },
+            { id: "deposit" as const, label: t("wallet.deposit") },
+            { id: "withdraw" as const, label: t("wallet.withdraw") },
           ] as const
         ).map((item) => (
           <button

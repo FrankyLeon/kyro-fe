@@ -3,8 +3,10 @@ import { Dices } from "lucide-react";
 import { fetchProviders } from "@/lib/api/server/games";
 import { buildStoreUrl } from "@/lib/store-url";
 import { SITE_BRAND } from "@/lib/site-copy";
+import { getI18n } from "@/i18n/get-i18n";
 
 export async function Footer() {
+  const { t } = await getI18n();
   const providers = await fetchProviders();
   const activeProviders = providers.filter((provider) => provider.status === 1);
   const listedProviders = activeProviders.length ? activeProviders : providers;
@@ -24,16 +26,15 @@ export async function Footer() {
               </span>
             </div>
             <p className="text-sm text-zinc-500 leading-relaxed">
-              Premium online betting. Fund your wallet, browse games by provider,
-              and play instantly in your browser.
+              {t("footer.blurb")}
             </p>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-zinc-200 mb-3">Providers</h3>
+            <h3 className="text-sm font-semibold text-zinc-200 mb-3">{t("footer.providers")}</h3>
             <ul className="space-y-2 text-sm text-zinc-500">
               <li>
                 <Link href="/store" className="hover:text-amber-400 transition-colors">
-                  All games
+                  {t("footer.allGames")}
                 </Link>
               </li>
               {listedProviders.map((provider) => (
@@ -49,46 +50,46 @@ export async function Footer() {
             </ul>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-zinc-200 mb-3">Account</h3>
+            <h3 className="text-sm font-semibold text-zinc-200 mb-3">{t("footer.account")}</h3>
             <ul className="space-y-2 text-sm text-zinc-500">
               <li>
                 <Link href="/wallet" className="hover:text-amber-400 transition-colors">
-                  Wallet
+                  {t("footer.wallet")}
                 </Link>
               </li>
               <li>
                 <Link href="/register" className="hover:text-amber-400 transition-colors">
-                  Create account
+                  {t("footer.createAccount")}
                 </Link>
               </li>
               <li>
                 <Link href="/login" className="hover:text-amber-400 transition-colors">
-                  Sign in
+                  {t("footer.signIn")}
                 </Link>
               </li>
             </ul>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-zinc-200 mb-3">Support</h3>
+            <h3 className="text-sm font-semibold text-zinc-200 mb-3">{t("footer.support")}</h3>
             <ul className="space-y-2 text-sm text-zinc-500">
               <li>
                 <Link href="/support" className="hover:text-amber-400 transition-colors">
-                  Help center
+                  {t("footer.helpCenter")}
                 </Link>
               </li>
               <li>
                 <Link href="/support/contact" className="hover:text-amber-400 transition-colors">
-                  Contact us
+                  {t("footer.contactUs")}
                 </Link>
               </li>
               <li>
                 <Link href="/support/refunds" className="hover:text-amber-400 transition-colors">
-                  Refund policy
+                  {t("footer.refundPolicy")}
                 </Link>
               </li>
               <li>
                 <Link href="/support/responsible-gaming" className="hover:text-amber-400 transition-colors">
-                  Responsible gaming
+                  {t("footer.responsibleGaming")}
                 </Link>
               </li>
             </ul>
@@ -96,9 +97,12 @@ export async function Footer() {
         </div>
         <div className="mt-10 pt-8 border-t border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-zinc-600">
           <span>
-            © {new Date().getFullYear()} {SITE_BRAND.name}. All rights reserved.
+            {t("footer.rights", {
+              year: new Date().getFullYear(),
+              brand: SITE_BRAND.name,
+            })}
           </span>
-          <span>18+ · Play responsibly</span>
+          <span>{t("footer.playResponsibly")}</span>
         </div>
       </div>
     </footer>

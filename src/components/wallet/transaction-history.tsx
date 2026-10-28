@@ -6,19 +6,17 @@ import { History } from "lucide-react";
 import { fetchTransactionHistory } from "@/lib/api/wallet";
 import { shortenTxHash } from "@/lib/bep20-tx-hash";
 import type { TransactionRecord } from "@/types/wallet";
+import { useI18n } from "@/context/locale-context";
 import { formatBalance, formatDateTime } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-
-const typeLabels = {
-  deposit: "Deposit",
-  withdraw: "Withdrawal",
-} as const;
+import { txStatusLabel } from "@/i18n/labels";
 
 interface TransactionHistoryProps {
   refreshKey?: number;
 }
 
 export function TransactionHistory({ refreshKey = 0 }: TransactionHistoryProps) {
+  const { t, intl } = useI18n();
   const [records, setRecords] = useState<TransactionRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -38,7 +36,7 @@ export function TransactionHistory({ refreshKey = 0 }: TransactionHistoryProps) 
           setError(
             err instanceof Error
               ? err.message
-              : "Could not load transaction history."
+              : t("tx.loadFailed")
           );
         }
       } finally {
@@ -50,7 +48,7 @@ export function TransactionHistory({ refreshKey = 0 }: TransactionHistoryProps) 
     return () => {
       cancelled = true;
     };
-  }, [refreshKey]);
+  }, [refreshKey, t]);
 
   if (loading) {
     return (
@@ -72,12 +70,12 @@ export function TransactionHistory({ refreshKey = 0 }: TransactionHistoryProps) 
     return (
       <div className="rounded-xl border border-dashed border-zinc-800 py-10 text-center space-y-2">
         <History className="h-8 w-8 text-zinc-700 mx-auto mb-2" />
-        <p className="text-sm text-zinc-500">No transactions yet</p>
+        <p className="text-sm text-zinc-500">{t("tx.empty")}</p>
         <Link
           href="/wallet"
           className="inline-block text-sm text-amber-400 hover:text-amber-300"
         >
-          Make your first deposit
+          {t("tx.firstDeposit")}
         </Link>
       </div>
     );
@@ -101,10 +99,11 @@ export function TransactionHistory({ refreshKey = 0 }: TransactionHistoryProps) 
                 }`}
               >
                 {sign}
-                {formatBalance(tx.amountCents, tx.currency)}
+                {formatBalance(tx.amountCents, tx.currency, intl)}
               </p>
               <p className="text-xs text-zinc-500 mt-0.5">
-                {formatDateTime(tx.createdAt)} · {typeLabels[tx.type]}
+                {formatDateTime(tx.createdAt, intl)} ·{" "}
+                {tx.type === "withdraw" ? t("tx.withdraw") : t("tx.deposit")}
                 {tx.txHash
                   ? ` · ${shortenTxHash(tx.txHash)}`
                   : tx.reference
@@ -116,13 +115,13 @@ export function TransactionHistory({ refreshKey = 0 }: TransactionHistoryProps) 
               variant={tx.status === "completed" ? "category" : "default"}
               className={
                 tx.status === "pending"
-                  ? "capitalize border-amber-500/30 text-amber-300"
+                  ? "border-amber-500/30 text-amber-300"
                   : tx.status === "rejected" || tx.status === "failed"
-                    ? "capitalize border-red-500/30 text-red-300"
-                    : "capitalize"
+                    ? "border-red-500/30 text-red-300"
+                    : ""
               }
             >
-              {tx.status}
+              {txStatusLabel(t, tx.status)}
             </Badge>
           </li>
         );

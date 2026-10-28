@@ -1,5 +1,8 @@
+"use client";
+
 import type { User } from "@/types";
 import type { PlayerBalanceEntry } from "@/types/player";
+import { useI18n } from "@/context/locale-context";
 import { formatBalance } from "@/lib/utils";
 
 interface BalanceDisplayProps {
@@ -7,11 +10,12 @@ interface BalanceDisplayProps {
   size?: "md" | "lg";
 }
 
-function formatEntryAmount(entry: PlayerBalanceEntry): string {
-  return formatBalance(Math.round(entry.amount * 100), entry.currency);
+function formatEntryAmount(entry: PlayerBalanceEntry, locale: string): string {
+  return formatBalance(Math.round(entry.amount * 100), entry.currency, locale);
 }
 
 export function BalanceDisplay({ user, size = "md" }: BalanceDisplayProps) {
+  const { t, intl } = useI18n();
   const entries =
     user.balances && user.balances.length > 0
       ? user.balances
@@ -26,9 +30,11 @@ export function BalanceDisplay({ user, size = "md" }: BalanceDisplayProps) {
         <p
           className={`${primaryClass} text-amber-300`}
         >
-          {formatBalance(user.balanceCents, user.currency)}
+          {formatBalance(user.balanceCents, user.currency, intl)}
         </p>
-        <p className="text-sm text-zinc-500 mt-1">Primary balance · {user.currency}</p>
+        <p className="text-sm text-zinc-500 mt-1">
+          {t("account.primaryBalance", { currency: user.currency })}
+        </p>
       </div>
 
       {entries.length > 1 ? (
@@ -40,7 +46,7 @@ export function BalanceDisplay({ user, size = "md" }: BalanceDisplayProps) {
             >
               <span className="text-zinc-500">{entry.currency}</span>
               <span className="font-medium text-zinc-200">
-                {formatEntryAmount(entry)}
+                {formatEntryAmount(entry, intl)}
               </span>
             </li>
           ))}

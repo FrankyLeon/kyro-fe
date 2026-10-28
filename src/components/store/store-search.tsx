@@ -12,6 +12,7 @@ import {
   type GameSort,
 } from "@/lib/game-search";
 import { formatProviderLabel } from "@/lib/site-copy";
+import { useI18n } from "@/context/locale-context";
 import type Fuse from "fuse.js";
 import { cn } from "@/lib/utils";
 import { StoreFilterSelect } from "@/components/store/store-filter-select";
@@ -60,6 +61,7 @@ export function StoreSearch({
   onSortChange,
   onSelectGame,
 }: StoreSearchProps) {
+  const { t } = useI18n();
   const listboxId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -83,7 +85,7 @@ export function StoreSearch({
 
   const suggestions = open ? getSearchSuggestions(fuse, query, 6) : [];
   const providerOptions = [
-    { value: "", label: "All" },
+    { value: "", label: t("store.all") },
     ...providers.map((name) => ({ value: name, label: name })),
   ];
 
@@ -155,7 +157,7 @@ export function StoreSearch({
           }}
           onFocus={() => setOpen(true)}
           onKeyDown={handleKeyDown}
-          placeholder="Search"
+          placeholder={t("store.search")}
           className={cn(
             "h-12 w-full rounded-lg border border-zinc-700/80 bg-zinc-950/40",
             "pl-10 pr-10 text-sm text-zinc-100 placeholder:text-zinc-500",
@@ -169,7 +171,7 @@ export function StoreSearch({
             type="button"
             onClick={handleClear}
             className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
-            aria-label="Clear search"
+            aria-label={t("store.clearSearch")}
           >
             <X className="h-4 w-4" />
           </button>
@@ -219,7 +221,7 @@ export function StoreSearch({
               </li>
             ))}
             <li className="border-t border-zinc-800 px-3 py-2 text-center text-xs text-zinc-500">
-              ↑↓ navigate · Enter to open · Esc to close
+              {t("store.searchHint")}
             </li>
           </ul>
         ) : null}
@@ -227,15 +229,18 @@ export function StoreSearch({
 
       <div className="grid grid-cols-2 gap-2 sm:w-[22rem] sm:shrink-0">
         <StoreFilterSelect
-          label="Providers"
+          label={t("store.providers")}
           value={provider}
           options={providerOptions}
           onChange={onProviderChange}
         />
         <StoreFilterSelect
-          label="Sort By"
+          label={t("store.sortBy")}
           value={sort}
-          options={GAME_SORT_OPTIONS}
+          options={GAME_SORT_OPTIONS.map((option) => ({
+            ...option,
+            label: option.value === "za" ? t("store.sortZa") : t("store.sortAz"),
+          }))}
           onChange={(value) => onSortChange(value as GameSort)}
         />
       </div>

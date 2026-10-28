@@ -10,6 +10,7 @@ import {
 } from "react";
 import { Check, ChevronDown, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/context/locale-context";
 import { CurrencyIcon } from "./currency-icon";
 
 export function WalletField({
@@ -67,8 +68,9 @@ export function WalletBalanceField({
 }: {
   amountLabel: string;
 }) {
+  const { t } = useI18n();
   return (
-    <WalletField label="Balance" icon={<CurrencyIcon />}>
+    <WalletField label={t("wallet.balance")} icon={<CurrencyIcon />}>
       {amountLabel}
     </WalletField>
   );
@@ -81,6 +83,7 @@ export function WalletCopyField({
   label: string;
   value: string;
 }) {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
 
   async function copy() {
@@ -97,7 +100,7 @@ export function WalletCopyField({
           type="button"
           onClick={copy}
           className="rounded-md p-1.5 text-zinc-400 transition-colors hover:bg-white/5 hover:text-white"
-          aria-label={`Copy ${label.toLowerCase()}`}
+          aria-label={copied ? t("wallet.copied") : t("wallet.copy", { label })}
         >
           {copied ? (
             <Check className="h-4 w-4 text-emerald-400" />
@@ -131,6 +134,7 @@ export function WalletSelect<T extends string>({
   onChange: (id: T) => void;
   icon?: ReactNode;
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const listId = useId();
@@ -162,7 +166,7 @@ export function WalletSelect<T extends string>({
         }
         onClick={() => setOpen((current) => !current)}
       >
-        {selected?.label ?? "Select"}
+        {selected?.label ?? t("wallet.select")}
       </WalletField>
 
       {open ? (
@@ -359,6 +363,7 @@ export function MethodGlyph({
 }
 
 export function QrCodeImage({ value, size = 196 }: { value: string; size?: number }) {
+  const { t } = useI18n();
   const src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(
     value
   )}&color=7c3aed&bgcolor=ffffff&qzone=2`;
@@ -368,7 +373,7 @@ export function QrCodeImage({ value, size = 196 }: { value: string; size?: numbe
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
-        alt="Deposit address QR code"
+        alt={t("wallet.qrAlt")}
         width={size}
         height={size}
         className="block"

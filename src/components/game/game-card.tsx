@@ -7,18 +7,21 @@ import type { Game } from "@/types";
 import { resolveGameImage } from "@/lib/game-image";
 import { formatCategoryLabel, formatProviderLabel } from "@/lib/site-copy";
 import { useAuth } from "@/context/auth-context";
+import { useI18n } from "@/context/locale-context";
 
 interface GameCardProps {
   game: Game;
 }
 
 export function GameCard({ game }: GameCardProps) {
+  const { t } = useI18n();
   const { user } = useAuth();
   const playHref = user
     ? `/play/${game.slug}`
     : `/login?redirect=/play/${game.slug}`;
   const provider = formatProviderLabel(game);
-  const category = formatCategoryLabel(game.category);
+  const category =
+    game.category === "slots" ? t("games.reelsSlots") : formatCategoryLabel(game.category);
 
   return (
     <article className="group relative z-0 isolate overflow-hidden rounded-lg bg-zinc-900 ring-1 ring-transparent transition-[box-shadow,ring-color] duration-300 hover:ring-2 hover:ring-amber-400">

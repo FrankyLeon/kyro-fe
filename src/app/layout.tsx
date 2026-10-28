@@ -4,10 +4,10 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
-import { SITE_BRAND } from "@/lib/site-copy";
+import { getI18n } from "@/i18n/get-i18n";
 
 const inter = Inter({
-  subsets: ["latin"],
+  subsets: ["latin", "cyrillic"],
   variable: "--font-body",
 });
 
@@ -16,23 +16,28 @@ const outfit = Outfit({
   variable: "--font-display",
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: `${SITE_BRAND.name} — ${SITE_BRAND.tagline}`,
-    template: `%s | ${SITE_BRAND.name}`,
-  },
-  description: `${SITE_BRAND.name} — browse games, fund your wallet, and bet instantly in your browser.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return {
+    title: {
+      default: t("meta.defaultTitle"),
+      template: t("meta.titleTemplate"),
+    },
+    description: t("meta.defaultDescription"),
+  };
+}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { locale, messages } = await getI18n();
+
   return (
-    <html lang="en" className={`h-full ${inter.variable} ${outfit.variable}`}>
+    <html lang={locale} className={`h-full ${inter.variable} ${outfit.variable}`}>
       <body className="min-h-full flex flex-col antialiased ambient-bg text-zinc-100">
-        <Providers>
+        <Providers locale={locale} messages={messages}>
           <Header />
           <main className="flex-1">{children}</main>
           <Footer />

@@ -1,6 +1,7 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
+import { useI18n } from "@/context/locale-context";
 import type { PayPalPaymentDetails } from "@/types/deposit";
 
 interface PaymentPayPalFormProps {
@@ -14,15 +15,15 @@ export function PaymentPayPalForm({
   onChange,
   defaultEmail,
 }: PaymentPayPalFormProps) {
+  const { t } = useI18n();
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4 text-sm text-zinc-400">
-        Send the deposit to the operator PayPal account shown above, then
-        confirm here. Your balance is credited after the payment is approved.
+        {t("wallet.paypalHelp")}
       </div>
       <Input
         id="paypal-email"
-        label="PayPal email"
+        label={t("wallet.paypalEmail")}
         type="email"
         placeholder="you@email.com"
         value={value.email || defaultEmail || ""}

@@ -1,12 +1,13 @@
 import { Coins, Shield, Zap } from "lucide-react";
+import { getI18n } from "@/i18n/get-i18n";
 
-const stats = [
-  { icon: Zap, label: "Instant play", value: "No download" },
-  { icon: Coins, label: "Real stakes", value: "Live balance" },
-  { icon: Shield, label: "Secure wallet", value: "Protected" },
-];
-
-export function HeroStats() {
+export async function HeroStats() {
+  const { t } = await getI18n();
+  const stats = [
+    { icon: Zap, label: t("home.statInstant"), value: t("home.statNoDownload") },
+    { icon: Coins, label: t("home.statStakes"), value: t("home.statLiveBalance") },
+    { icon: Shield, label: t("home.statSecure"), value: t("home.statProtected") },
+  ];
   return (
     <div className="mt-10 flex flex-wrap gap-3 sm:gap-4">
       {stats.map((stat) => (

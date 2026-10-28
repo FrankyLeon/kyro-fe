@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/context/locale-context";
 
 interface PaginationProps {
   shown: number;
@@ -17,6 +18,7 @@ export function Pagination({
   isLoading = false,
   className,
 }: PaginationProps) {
+  const { t, intl } = useI18n();
   if (total === 0) return null;
 
   const progress = Math.min(100, (shown / total) * 100);
@@ -30,7 +32,7 @@ export function Pagination({
         aria-valuemin={0}
         aria-valuemax={total}
         aria-valuenow={shown}
-        aria-label="Games loaded"
+        aria-label={t("store.loaded")}
       >
         <div
           className="h-full rounded-full bg-amber-400 transition-[width] duration-300"
@@ -39,7 +41,10 @@ export function Pagination({
       </div>
 
       <p className="text-sm text-white">
-        Showing {shown.toLocaleString()} of {total.toLocaleString()}
+        {t("store.showing", {
+          shown: shown.toLocaleString(intl),
+          total: total.toLocaleString(intl),
+        })}
       </p>
 
       {hasMore ? (
@@ -54,7 +59,7 @@ export function Pagination({
               <span className="catalog-load-bar block h-full w-1/3 rounded-full bg-amber-400" />
             </span>
           ) : null}
-          {isLoading ? "Loading..." : "Show More"}
+          {isLoading ? t("store.loading") : t("store.showMore")}
         </button>
       ) : null}
     </div>

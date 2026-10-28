@@ -10,10 +10,11 @@ import { GuestAuthPrompt } from "@/components/auth/guest-auth-prompt";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
 import { BalanceDisplay } from "@/components/wallet/balance-display";
-import { SITE_CTA } from "@/lib/site-copy";
+import { useI18n } from "@/context/locale-context";
 import { formatBalance } from "@/lib/utils";
 
 export default function AccountPage() {
+  const { t, intl } = useI18n();
   const { user, isLoading, refreshBalance } = useAuth();
   const logout = useLogout();
   const { openWallet } = useWalletMenu();
@@ -36,15 +37,15 @@ export default function AccountPage() {
     return (
       <GuestAuthPrompt
         redirect="/account"
-        title="Account"
-        description="Sign in to view your balance and profile."
+        title={t("account.title")}
+        description={t("account.guestBody")}
       />
     );
   }
 
   return (
     <div className="mx-auto max-w-lg px-4 py-10 sm:px-6 lg:px-8">
-      <h1 className="text-3xl font-bold text-white mb-8">Account</h1>
+      <h1 className="text-3xl font-bold text-white mb-8">{t("account.title")}</h1>
 
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
         <div className="flex items-center gap-4">
@@ -58,7 +59,7 @@ export default function AccountPage() {
             <p className="text-sm text-zinc-500">{user.email}</p>
             {user.playerCode ? (
               <p className="text-xs text-zinc-600 mt-1">
-                Player code · {user.playerCode}
+                {t("account.playerCode", { code: user.playerCode })}
               </p>
             ) : null}
           </div>
@@ -66,7 +67,7 @@ export default function AccountPage() {
 
         <div className="mt-6 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-4">
           <p className="text-xs font-medium uppercase tracking-wider text-amber-400/80 mb-2">
-            Wallet balance
+            {t("account.walletBalance")}
           </p>
           <BalanceDisplay user={user} />
         </div>
@@ -79,10 +80,10 @@ export default function AccountPage() {
           >
             <span className="flex items-center gap-2 text-zinc-300">
               <Wallet className="h-4 w-4 text-amber-400" />
-              Wallet & deposits
+              {t("account.walletDeposits")}
             </span>
             <span className="font-semibold text-amber-400">
-              {formatBalance(user.balanceCents, user.currency)}
+              {formatBalance(user.balanceCents, user.currency, intl)}
             </span>
           </button>
           <Link
@@ -91,9 +92,9 @@ export default function AccountPage() {
           >
             <span className="flex items-center gap-2 text-zinc-300">
               <Dices className="h-4 w-4" />
-              {SITE_CTA.browseGames}
+              {t("cta.browseGames")}
             </span>
-            <span className="text-amber-400 text-sm">Open →</span>
+            <span className="text-amber-400 text-sm">{t("account.open")}</span>
           </Link>
           <Link
             href="/support"
@@ -101,20 +102,22 @@ export default function AccountPage() {
           >
             <span className="flex items-center gap-2 text-zinc-300">
               <HelpCircle className="h-4 w-4" />
-              Help & support
+              {t("account.help")}
             </span>
-            <span className="text-amber-400 text-sm">Open →</span>
+            <span className="text-amber-400 text-sm">{t("account.open")}</span>
           </Link>
         </div>
 
         <Button variant="danger" className="w-full mt-6" onClick={logout}>
-          Sign out
+          {t("account.signOut")}
         </Button>
       </div>
 
       <p className="text-xs text-zinc-600 mt-6 text-center flex items-center justify-center gap-1">
         <User className="h-3 w-3" />
-        Member since {new Date(user.createdAt).toLocaleDateString()}
+        {t("account.memberSince", {
+          date: new Date(user.createdAt).toLocaleDateString(intl),
+        })}
       </p>
     </div>
   );

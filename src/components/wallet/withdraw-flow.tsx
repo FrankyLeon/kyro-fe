@@ -10,6 +10,8 @@ import {
   parseWithdrawCents,
 } from "@/lib/withdraw-limits";
 import { getWalletMinAmountCents } from "@/lib/wallet-config";
+import { useI18n } from "@/context/locale-context";
+import { bankDisplayName, paymentMethodLabel } from "@/i18n/labels";
 import { WITHDRAW_PAYMENT_OPTIONS } from "@/lib/payment-methods";
 import { useWithdrawDestinations } from "@/hooks/use-withdraw-destinations";
 import type { WithdrawMethod, WalletTransferResult } from "@/types/wallet";
@@ -47,6 +49,7 @@ function resolvePayoutCurrency(
 }
 
 export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
+  const { t } = useI18n();
   const { user, refreshBalance } = useAuth();
   const { destinations } = useWithdrawDestinations();
   const [amountInput, setAmountInput] = useState("0");
@@ -149,29 +152,31 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
     setError("");
 
     if (amountCents <= 0) {
-      setError("Enter a valid withdrawal amount.");
+      setError(t("wallet.invalidWithdraw"));
       return;
     }
     if (amountCents < minAmountCents) {
       setError(
-        `Minimum withdrawal is ${formatWalletAmount(minAmountCents, currency)}.`
+        t("wallet.minWithdraw", {
+          amount: formatWalletAmount(minAmountCents, currency),
+        })
       );
       return;
     }
     if (exceedsBalance) {
-      setError("Amount exceeds your available balance.");
+      setError(t("wallet.exceedsBalance"));
       return;
     }
     if (activeMethod === "bank" && (!resolvedAccountName || !accountNumber)) {
-      setError("Enter your account name and number.");
+      setError(t("wallet.bankDetailsRequired"));
       return;
     }
     if (activeMethod === "crypto" && !cryptoAddress.trim()) {
-      setError("Enter your crypto payout address.");
+      setError(t("wallet.cryptoAddressRequired"));
       return;
     }
     if (activeMethod === "paypal" && !resolvedPaypal.trim()) {
-      setError("Enter your PayPal email.");
+      setError(t("wallet.paypalEmailRequired"));
       return;
     }
 
@@ -196,7 +201,7 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
       setLastResult(result);
       onSuccess?.(result);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Withdrawal failed.");
+      setError(e instanceof Error ? e.message : t("wallet.withdrawFailed"));
     } finally {
       setProcessing(false);
     }
@@ -214,7 +219,7 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
       <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-8 text-center">
         <CheckCircle2 className="mx-auto mb-4 h-14 w-14 text-emerald-400" />
         <h2 className="text-xl font-bold text-white">
-          {pending ? "Withdrawal submitted" : "Withdrawal complete"}
+          {pending ? t("wallet.withdrawSubmitted") : t("wallet.withdrawComplete")}
         </h2>
         <p className="mt-2 text-zinc-400">
           <span className="font-semibold text-zinc-200">
@@ -223,18 +228,16 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
               lastResult.currency
             )}
           </span>{" "}
-          {pending
-            ? "is waiting for review. Your balance is unchanged until approval."
-            : "withdrawn from your balance"}
+          {pending ? t("wallet.withdrawPending") : t("wallet.withdrawAdded")}
         </p>
         {lastResult.txHash ? (
           <p className="mt-4 text-sm text-zinc-500">
-            Tx:{" "}
+            {t("wallet.tx")}{" "}
             <span className="font-mono text-zinc-400">{lastResult.txHash}</span>
           </p>
         ) : lastResult.reference ? (
           <p className="mt-4 text-sm text-zinc-500">
-            Reference:{" "}
+            {t("wallet.reference")}{" "}
             <span className="font-mono text-zinc-400">
               {lastResult.reference}
             </span>
@@ -242,10 +245,10 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
         ) : null}
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Button onClick={resetFlow} variant="secondary">
-            Make another withdrawal
+            {t("wallet.anotherWithdraw")}
           </Button>
           <a href="/account">
-            <Button>View account</Button>
+            <Button>{t("wallet.viewAccount")}</Button>
           </a>
         </div>
       </div>
@@ -259,13 +262,13 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
       />
 
       <WalletSelect
-        label="Payments Method"
+        label={t("wallet.paymentMethod")}
         value={activeMethod}
         onChange={setMethod}
         icon={<MethodGlyph kind={selectedMethod?.icon ?? "bank"} />}
         options={paymentOptions.map((option) => ({
           id: option.id,
-          label: option.label,
+          label: paymentMethodLabel(t, option.id, option.label),
           icon: <MethodGlyph kind={option.icon} />,
         }))}
       />
@@ -273,7 +276,7 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
       <WalletMetaRow
         label={
           <span className="inline-flex items-center gap-1.5">
-            Available to withdraw
+            {t("wallet.available")}
             <Info className="h-3.5 w-3.5 text-zinc-500" />
           </span>
         }
@@ -283,7 +286,7 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
 
       <WalletAmountInput
         id="withdraw-amount"
-        label="Withdrawal amount"
+        label={t("wallet.withdrawAmount")}
         value={amountInput}
         onChange={(value) => {
           setAmountInput(value);
@@ -295,13 +298,13 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
             onClick={setMax}
             className="rounded-md bg-white/10 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-zinc-200 hover:bg-white/15"
           >
-            max
+            {t("wallet.max")}
           </button>
         }
       />
 
       <WalletMetaRow
-        label="Min. Amount"
+        label={t("wallet.minAmount")}
         value={formatWalletNumber(minAmountCents)}
         icon={<CurrencyIcon size="sm" />}
       />
@@ -309,12 +312,12 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
       <div className="grid grid-cols-[1fr_7.5rem] gap-2">
         <WalletInlineInput
           id="converted-amount"
-          label="Converted Amount"
+          label={t("wallet.converted")}
           value={convertedLabel}
           readOnly
         />
         <WalletSelect
-          label="Currency"
+          label={t("wallet.currency")}
           value={activeCurrency}
           onChange={setPayoutCurrency}
           options={currencies.map((code) => ({
@@ -328,24 +331,24 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
         <>
           <WalletInlineInput
             id="account-name"
-            label="Account name"
+            label={t("wallet.accountName")}
             value={resolvedAccountName}
             onChange={setAccountName}
           />
           <WalletInlineInput
             id="account-number"
-            label="Account number"
+            label={t("wallet.accountNumber")}
             value={accountNumber}
             onChange={setAccountNumber}
-            placeholder="Bank account number"
+            placeholder={t("wallet.bankAccountPlaceholder")}
           />
           <WalletSelect
-            label="Bank"
+            label={t("wallet.bank")}
             value={activeBankId}
             onChange={setBankId}
             options={banks.map((bank) => ({
               id: bank.id,
-              label: bank.label,
+              label: bankDisplayName(t, bank.id, bank.label),
             }))}
           />
         </>
@@ -354,7 +357,7 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
       {activeMethod === "crypto" ? (
         <WalletInlineInput
           id="crypto-address"
-          label="Payout address"
+          label={t("wallet.payoutAddress")}
           value={cryptoAddress}
           onChange={setCryptoAddress}
           placeholder="0x..."
@@ -364,14 +367,14 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
       {activeMethod === "paypal" ? (
         <WalletInlineInput
           id="paypal-payout"
-          label="PayPal email"
+          label={t("wallet.paypalEmail")}
           value={resolvedPaypal}
           onChange={setPaypalEmail}
         />
       ) : null}
 
       {exceedsBalance && amountCents > 0 ? (
-        <p className="text-sm text-red-400">Exceeds available balance.</p>
+        <p className="text-sm text-red-400">{t("wallet.exceedsAvailable")}</p>
       ) : null}
 
       {error ? (
@@ -386,7 +389,7 @@ export function WithdrawFlow({ onSuccess }: WithdrawFlowProps) {
         isLoading={processing}
         disabled={!amountValid}
       >
-        Submit withdrawal
+        {t("wallet.submitWithdraw")}
       </WalletActionButton>
     </div>
   );
